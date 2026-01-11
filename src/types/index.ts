@@ -144,3 +144,30 @@ export const RATING_CATEGORIES = [
   { key: 'safety', label: 'Safety', description: 'How safe do you feel?' },
   { key: 'value_for_money', label: 'Value', description: 'Bang for your buck' },
 ] as const;
+
+// Amenity types
+export type AmenityKey = 'has_food' | 'has_live_music' | 'shows_sports' | 'has_outdoor_seating';
+
+export interface AmenityVote {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  amenity: AmenityKey;
+  vote: boolean;
+  created_at: string;
+}
+
+export interface AmenityVoteSummary {
+  pub_id: string;
+  amenity: AmenityKey;
+  total_votes: number;
+  yes_votes: number;
+  no_votes: number;
+}
+
+export const AMENITIES: { key: AmenityKey; label: string; icon: string }[] = [
+  { key: 'has_food', label: 'Serves Food', icon: '🍴' },
+  { key: 'has_live_music', label: 'Live Music', icon: '🎵' },
+  { key: 'shows_sports', label: 'Shows Sports', icon: '⚽' },
+  { key: 'has_outdoor_seating', label: 'Outdoor Seating', icon: '🌳' },
+];

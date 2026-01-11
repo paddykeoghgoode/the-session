@@ -5,6 +5,7 @@ import StarRating from '@/components/StarRating';
 import PriceTable from '@/components/PriceTable';
 import PriceForm from '@/components/PriceForm';
 import ReviewForm from '@/components/ReviewForm';
+import AmenityVoting from '@/components/AmenityVoting';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review } from '@/types';
 
@@ -340,6 +341,18 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               </Link>
             </div>
           )}
+
+          {/* Amenity Voting */}
+          <AmenityVoting
+            pubId={pub.id}
+            currentValues={{
+              has_food: pub.has_food,
+              has_live_music: pub.has_live_music,
+              shows_sports: pub.shows_sports,
+              has_outdoor_seating: pub.has_outdoor_seating,
+            }}
+            userId={user?.id}
+          />
         </div>
       </div>
     </div>
