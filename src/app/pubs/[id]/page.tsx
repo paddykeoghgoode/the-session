@@ -7,6 +7,7 @@ import PriceForm from '@/components/PriceForm';
 import ReviewForm from '@/components/ReviewForm';
 import AmenityVoting from '@/components/AmenityVoting';
 import QuickAddPrice from '@/components/QuickAddPrice';
+import ShareButton from '@/components/ShareButton';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review } from '@/types';
 
@@ -183,6 +184,10 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               </svg>
               Get Directions
             </a>
+            <ShareButton
+              title={`${pub.name} - The Session`}
+              text={`Check out ${pub.name} on The Session - Dublin's pub price tracker!`}
+            />
           </div>
         </div>
 

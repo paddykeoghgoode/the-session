@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { getDistanceKm, formatDistance, formatPrice } from '@/lib/utils';
+import StarRating from '@/components/StarRating';
 import type { Pub } from '@/types';
 
 interface PubWithDistance extends Pub {
@@ -157,36 +158,73 @@ export default function NearbyPage() {
                 <Link
                   key={pub.id}
                   href={`/pubs/${pub.id}`}
-                  className="flex items-center justify-between bg-stout-800 rounded-lg p-4 border border-stout-700 hover:border-stout-500 transition-colors"
+                  className="block bg-stout-800 rounded-lg p-4 border border-stout-700 hover:border-stout-500 transition-colors"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-lg font-semibold text-cream-100">
-                        {pub.name}
-                      </h3>
-                      <span className="text-sm text-irish-green-500 font-medium">
-                        {formatDistance(pub.distance)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-stout-400">{pub.address}</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-lg font-semibold text-cream-100 truncate">
+                          {pub.name}
+                        </h3>
+                        <span className="text-sm text-irish-green-500 font-medium whitespace-nowrap">
+                          {formatDistance(pub.distance)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-stout-400 truncate">{pub.address}</p>
 
-                    {/* Amenities */}
-                    <div className="flex gap-2 mt-2">
-                      {pub.has_food && <span className="text-xs">🍴</span>}
-                      {pub.has_live_music && <span className="text-xs">🎵</span>}
-                      {pub.shows_sports && <span className="text-xs">⚽</span>}
-                      {pub.has_outdoor_seating && <span className="text-xs">🌳</span>}
-                    </div>
-                  </div>
+                      {/* Rating */}
+                      {pub.avg_rating && pub.avg_rating > 0 && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <StarRating rating={pub.avg_rating} size="sm" />
+                          <span className="text-xs text-stout-400">
+                            ({pub.review_count || 0})
+                          </span>
+                        </div>
+                      )}
 
-                  {pub.cheapest_guinness && (
-                    <div className="text-right ml-4">
-                      <div className="text-xs text-stout-400">Guinness</div>
-                      <div className="text-xl font-bold text-irish-green-500">
-                        {formatPrice(pub.cheapest_guinness)}
+                      {/* Amenities */}
+                      <div className="flex gap-2 mt-2">
+                        {pub.has_food && <span className="text-xs" title="Food">🍴</span>}
+                        {pub.has_live_music && <span className="text-xs" title="Live Music">🎵</span>}
+                        {pub.shows_sports && <span className="text-xs" title="Sports">⚽</span>}
+                        {pub.has_outdoor_seating && <span className="text-xs" title="Outdoor Seating">🌳</span>}
                       </div>
                     </div>
-                  )}
+
+                    {/* Pint Prices */}
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-stout-400 mb-1">Pint Prices</div>
+                      <div className="space-y-1">
+                        {pub.cheapest_guinness && (
+                          <div className="flex justify-between gap-3 text-sm">
+                            <span className="text-stout-400">Guinness</span>
+                            <span className="text-irish-green-500 font-semibold">
+                              {formatPrice(pub.cheapest_guinness)}
+                            </span>
+                          </div>
+                        )}
+                        {pub.cheapest_lager && (
+                          <div className="flex justify-between gap-3 text-sm">
+                            <span className="text-stout-400">Lager</span>
+                            <span className="text-cream-100 font-semibold">
+                              {formatPrice(pub.cheapest_lager)}
+                            </span>
+                          </div>
+                        )}
+                        {pub.cheapest_cider && (
+                          <div className="flex justify-between gap-3 text-sm">
+                            <span className="text-stout-400">Cider</span>
+                            <span className="text-cream-100 font-semibold">
+                              {formatPrice(pub.cheapest_cider)}
+                            </span>
+                          </div>
+                        )}
+                        {!pub.cheapest_guinness && !pub.cheapest_lager && !pub.cheapest_cider && (
+                          <span className="text-xs text-stout-500">No prices yet</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </Link>
               ))}
             </div>

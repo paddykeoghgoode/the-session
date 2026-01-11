@@ -34,6 +34,8 @@ export interface Pub {
   avg_rating?: number;
   review_count?: number;
   cheapest_guinness?: number;
+  cheapest_lager?: number;
+  cheapest_cider?: number;
 }
 
 export interface Drink {

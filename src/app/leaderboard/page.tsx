@@ -172,25 +172,50 @@ export default async function LeaderboardPage() {
         {/* Top Contributors */}
         <div>
           <h2 className="text-xl font-bold text-cream-100 mb-4">Top Contributors</h2>
+
+          {/* Top 3 Podium */}
+          {topContributors.length >= 3 && (
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {/* 2nd Place */}
+              <div className="bg-stout-800 rounded-lg border border-stout-700 p-4 text-center order-1">
+                <div className="text-3xl mb-2">🥈</div>
+                <p className="text-cream-100 font-medium truncate text-sm">
+                  {topContributors[1].display_name || topContributors[1].username || 'Anonymous'}
+                </p>
+                <p className="text-irish-green-500 font-bold">{topContributors[1].total_contributions}</p>
+              </div>
+
+              {/* 1st Place */}
+              <div className="bg-gradient-to-b from-yellow-900/30 to-stout-800 rounded-lg border border-yellow-700/50 p-4 text-center order-0 sm:order-1 -mt-2">
+                <div className="text-4xl mb-2">🏆</div>
+                <p className="text-cream-100 font-bold truncate">
+                  {topContributors[0].display_name || topContributors[0].username || 'Anonymous'}
+                </p>
+                <p className="text-yellow-400 font-bold text-lg">{topContributors[0].total_contributions}</p>
+                <p className="text-xs text-stout-400">contributions</p>
+              </div>
+
+              {/* 3rd Place */}
+              <div className="bg-stout-800 rounded-lg border border-stout-700 p-4 text-center order-2">
+                <div className="text-3xl mb-2">🥉</div>
+                <p className="text-cream-100 font-medium truncate text-sm">
+                  {topContributors[2].display_name || topContributors[2].username || 'Anonymous'}
+                </p>
+                <p className="text-irish-green-500 font-bold">{topContributors[2].total_contributions}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Rest of leaderboard */}
           <div className="bg-stout-800 rounded-lg border border-stout-700 divide-y divide-stout-700">
             {topContributors.length > 0 ? (
-              topContributors.map((profile, index) => (
+              topContributors.slice(topContributors.length >= 3 ? 3 : 0).map((profile, index) => (
                 <div
                   key={profile.id}
                   className="flex items-center gap-4 p-4"
                 >
-                  <span
-                    className={`text-xl font-bold w-8 ${
-                      index === 0
-                        ? 'text-yellow-400'
-                        : index === 1
-                        ? 'text-gray-300'
-                        : index === 2
-                        ? 'text-amber-600'
-                        : 'text-stout-500'
-                    }`}
-                  >
-                    {index + 1}
+                  <span className="text-lg font-bold w-8 text-stout-500">
+                    {topContributors.length >= 3 ? index + 4 : index + 1}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-cream-100 font-medium">
@@ -211,8 +236,18 @@ export default async function LeaderboardPage() {
                 </div>
               ))
             ) : (
-              <p className="p-4 text-stout-400 text-center">No contributors yet</p>
+              <div className="p-6 text-center">
+                <div className="text-4xl mb-2">🍺</div>
+                <p className="text-stout-400 mb-2">No contributors yet</p>
+                <p className="text-sm text-stout-500">Be the first to submit a price!</p>
+              </div>
             )}
+          </div>
+
+          {/* CTA to contribute */}
+          <div className="mt-4 bg-irish-green-600/10 border border-irish-green-600/30 rounded-lg p-4 text-center">
+            <p className="text-cream-100 text-sm mb-2">Want to climb the leaderboard?</p>
+            <p className="text-stout-400 text-xs">Submit prices and reviews to earn your spot!</p>
           </div>
         </div>
       </div>
