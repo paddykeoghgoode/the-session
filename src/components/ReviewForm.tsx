@@ -7,12 +7,18 @@ import { RATING_CATEGORIES } from '@/types';
 
 interface ReviewFormProps {
   pubId: string;
+  hasFood?: boolean;
   onSuccess?: () => void;
 }
 
-export default function ReviewForm({ pubId, onSuccess }: ReviewFormProps) {
+export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewFormProps) {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comment, setComment] = useState('');
+
+  // Filter out food rating if pub doesn't serve food
+  const displayCategories = hasFood
+    ? RATING_CATEGORIES
+    : RATING_CATEGORIES.filter(c => c.key !== 'food_quality');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -90,7 +96,7 @@ export default function ReviewForm({ pubId, onSuccess }: ReviewFormProps) {
       )}
 
       <div className="space-y-4">
-        {RATING_CATEGORIES.map((category) => (
+        {displayCategories.map((category) => (
           <div key={category.key} className="flex items-center justify-between">
             <div>
               <p className="text-cream-100 font-medium">{category.label}</p>

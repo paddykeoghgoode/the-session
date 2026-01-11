@@ -45,18 +45,22 @@ export function getGoogleMapsDirectionsUrl(pub: { latitude?: number | null; long
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pub.address + ', Dublin, Ireland')}`;
 }
 
-export function calculateAverageRating(review: {
-  pint_quality?: number | null;
-  ambience?: number | null;
-  food_quality?: number | null;
-  staff_friendliness?: number | null;
-  safety?: number | null;
-  value_for_money?: number | null;
-}): number {
+export function calculateAverageRating(
+  review: {
+    pint_quality?: number | null;
+    ambience?: number | null;
+    food_quality?: number | null;
+    staff_friendliness?: number | null;
+    safety?: number | null;
+    value_for_money?: number | null;
+  },
+  options?: { excludeFood?: boolean }
+): number {
   const ratings = [
     review.pint_quality,
     review.ambience,
-    review.food_quality,
+    // Only include food rating if not excluded
+    options?.excludeFood ? null : review.food_quality,
     review.staff_friendliness,
     review.safety,
     review.value_for_money,

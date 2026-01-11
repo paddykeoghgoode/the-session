@@ -62,10 +62,11 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
     notFound();
   }
 
-  // Calculate average rating
+  // Calculate average rating (exclude food rating if pub doesn't serve food)
+  const excludeFood = !pub.has_food;
   const avgRatings = reviews.reduce(
     (acc, review) => {
-      const rating = calculateAverageRating(review);
+      const rating = calculateAverageRating(review, { excludeFood });
       if (rating > 0) {
         acc.total += rating;
         acc.count += 1;
@@ -260,7 +261,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
                         </p>
                         <p className="text-sm text-stout-400">{formatDate(review.created_at)}</p>
                       </div>
-                      <StarRating rating={calculateAverageRating(review)} size="sm" showValue />
+                      <StarRating rating={calculateAverageRating(review, { excludeFood })} size="sm" showValue />
                     </div>
 
                     {/* Individual ratings */}
@@ -295,7 +296,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
                           <span className="text-cream-100">{review.value_for_money}/5</span>
                         </div>
                       )}
-                      {review.food_quality && (
+                      {pub.has_food && review.food_quality && (
                         <div className="text-sm">
                           <span className="text-stout-400">Food:</span>{' '}
                           <span className="text-cream-100">{review.food_quality}/5</span>
@@ -330,7 +331,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               {/* Add Review Form */}
               <div className="bg-stout-800 rounded-lg border border-stout-700 p-4">
                 <h3 className="text-lg font-semibold text-cream-100 mb-4">Write a Review</h3>
-                <ReviewForm pubId={pub.id} />
+                <ReviewForm pubId={pub.id} hasFood={pub.has_food} />
               </div>
             </>
           ) : (
