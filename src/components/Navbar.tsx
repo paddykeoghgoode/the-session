@@ -34,6 +34,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: '/', label: 'Home' },
+    { href: '/nearby', label: 'Near Me' },
     { href: '/pubs', label: 'Pubs' },
     { href: '/deals', label: 'Deals' },
     { href: '/leaderboard', label: 'Leaderboard' },

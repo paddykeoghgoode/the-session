@@ -6,6 +6,7 @@ import PriceTable from '@/components/PriceTable';
 import PriceForm from '@/components/PriceForm';
 import ReviewForm from '@/components/ReviewForm';
 import AmenityVoting from '@/components/AmenityVoting';
+import QuickAddPrice from '@/components/QuickAddPrice';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review } from '@/types';
 
@@ -355,6 +356,9 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
           />
         </div>
       </div>
+
+      {/* Quick Add Price Button */}
+      <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
     </div>
   );
 }
