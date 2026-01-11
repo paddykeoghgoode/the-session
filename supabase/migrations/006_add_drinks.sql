@@ -1,7 +1,23 @@
--- The Session - Enhanced pub_summaries view with more price columns
--- Adds cheapest_lager and cheapest_cider to the view
--- NOTE: Uses numeric(5,2) cast to match existing column type
+-- The Session - Add more drink options
+-- Adds Irish stouts, popular lagers, and ales
 
+-- Insert new drinks (IDs 8-18)
+INSERT INTO drinks (name, category) VALUES
+  ('Beamish', 'beer'),        -- 8 - Irish Stout
+  ('Murphys', 'beer'),        -- 9 - Irish Stout
+  ('Carlsberg', 'beer'),      -- 10 - Lager
+  ('Tuborg', 'beer'),         -- 11 - Lager
+  ('Birra Moretti', 'beer'),  -- 12 - Lager
+  ('San Miguel', 'beer'),     -- 13 - Lager
+  ('Hop House 13', 'beer'),   -- 14 - Lager
+  ('Budweiser', 'beer'),      -- 15 - Lager
+  ('Madri', 'beer'),          -- 16 - Lager
+  ('Asahi', 'beer'),          -- 17 - Lager
+  ('Smithwicks', 'beer')      -- 18 - Irish Red Ale
+ON CONFLICT (name) DO NOTHING;
+
+-- Update pub_summaries view to include all stouts and expanded lagers
+-- Using numeric(5,2) cast for compatibility with existing column types
 CREATE OR REPLACE VIEW pub_summaries AS
 SELECT
   p.*,
@@ -27,17 +43,17 @@ SELECT
     ) subq
   ) as avg_rating,
   (SELECT COUNT(*) FROM reviews r WHERE r.pub_id = p.id) as review_count,
-  -- Cheapest Guinness (drink_id = 1)
+  -- Cheapest Guinness (drink_id = 1) - keep for backward compatibility
   (
     SELECT MIN(pr.price)::numeric(5,2)
     FROM prices pr
     WHERE pr.pub_id = p.id AND pr.drink_id = 1
   ) as cheapest_guinness,
-  -- Cheapest Lager (Heineken=2, Coors Light=3, Rockshore Lager=4)
+  -- Cheapest Lager (Heineken=2, Coors=3, Rockshore=4, Carlsberg=10, Tuborg=11, Moretti=12, San Miguel=13, Hop House=14, Budweiser=15, Madri=16, Asahi=17)
   (
     SELECT MIN(pr.price)::numeric(5,2)
     FROM prices pr
-    WHERE pr.pub_id = p.id AND pr.drink_id IN (2, 3, 4)
+    WHERE pr.pub_id = p.id AND pr.drink_id IN (2, 3, 4, 10, 11, 12, 13, 14, 15, 16, 17)
   ) as cheapest_lager,
   -- Cheapest Cider (Bulmers=5, Orchard Thieves=6, Rockshore Cider=7)
   (

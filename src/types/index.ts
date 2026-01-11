@@ -127,15 +127,28 @@ export interface TopRatedPub {
   review_count: number;
 }
 
-// Constants
+// Constants - IDs match database order, do NOT reorder existing drinks
 export const DRINKS: Omit<Drink, 'id'>[] = [
-  { name: 'Guinness', category: 'beer' },
-  { name: 'Heineken', category: 'beer' },
-  { name: 'Coors Light', category: 'beer' },
-  { name: 'Rockshore Lager', category: 'beer' },
-  { name: 'Bulmers', category: 'cider' },
-  { name: 'Orchard Thieves', category: 'cider' },
-  { name: 'Rockshore Cider', category: 'cider' },
+  // Original drinks (1-7) - keep order for backward compatibility
+  { name: 'Guinness', category: 'beer' },      // 1 - Stout
+  { name: 'Heineken', category: 'beer' },      // 2 - Lager
+  { name: 'Coors Light', category: 'beer' },   // 3 - Lager
+  { name: 'Rockshore Lager', category: 'beer' }, // 4 - Lager
+  { name: 'Bulmers', category: 'cider' },      // 5 - Cider
+  { name: 'Orchard Thieves', category: 'cider' }, // 6 - Cider
+  { name: 'Rockshore Cider', category: 'cider' }, // 7 - Cider
+  // New drinks (8-18)
+  { name: 'Beamish', category: 'beer' },       // 8 - Stout
+  { name: 'Murphys', category: 'beer' },       // 9 - Stout
+  { name: 'Carlsberg', category: 'beer' },     // 10 - Lager
+  { name: 'Tuborg', category: 'beer' },        // 11 - Lager
+  { name: 'Birra Moretti', category: 'beer' }, // 12 - Lager
+  { name: 'San Miguel', category: 'beer' },    // 13 - Lager
+  { name: 'Hop House 13', category: 'beer' },  // 14 - Lager
+  { name: 'Budweiser', category: 'beer' },     // 15 - Lager
+  { name: 'Madri', category: 'beer' },         // 16 - Lager
+  { name: 'Asahi', category: 'beer' },         // 17 - Lager
+  { name: 'Smithwicks', category: 'beer' },    // 18 - Ale
 ];
 
 export const RATING_CATEGORIES = [
