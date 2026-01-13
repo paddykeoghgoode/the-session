@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
@@ -23,7 +23,7 @@ interface PendingReview {
   profile: { id: string; username: string | null; display_name: string | null; is_trusted: boolean }[] | null;
 }
 
-export default function AdminReviewsPage() {
+function AdminReviewsContent() {
   const [reviews, setReviews] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -285,5 +285,13 @@ export default function AdminReviewsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminReviewsPage() {
+  return (
+    <Suspense fallback={<div>Loading reviews...</div>}>
+      <AdminReviewsContent />
+    </Suspense>
   );
 }
