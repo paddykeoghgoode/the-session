@@ -1,5 +1,6 @@
 export interface Pub {
   id: string;
+  slug: string;
   name: string;
   address: string;
   eircode: string | null;
