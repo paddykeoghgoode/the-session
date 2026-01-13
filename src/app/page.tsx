@@ -14,7 +14,7 @@ async function getTopDeals() {
     .select(`
       *,
       drink:drinks(*),
-      pub:pubs(*)
+      pub:pubs(id, name, address, slug)
     `)
     .eq('is_deal', true)
     .order('created_at', { ascending: false })
@@ -30,7 +30,7 @@ async function getCheapestGuinness() {
     .from('prices')
     .select(`
       *,
-      pub:pubs(*)
+      pub:pubs(id, name, address, slug)
     `)
     .eq('drink_id', 1) // Guinness
     .order('price', { ascending: true })
@@ -118,7 +118,7 @@ export default async function HomePage() {
               {cheapestGuinness.map((price, index) => (
                 <Link
                   key={price.id}
-                  href={`/pubs/${price.pub?.id}`}
+                  href={`/pubs/${price.pub?.slug}`}
                   className="flex items-center justify-between bg-stout-800 rounded-lg p-4 border border-stout-700 hover:border-stout-500 transition-colors"
                 >
                   <div className="flex items-center gap-4">
@@ -164,7 +164,7 @@ export default async function HomePage() {
               {deals.map((deal) => (
                 <Link
                   key={deal.id}
-                  href={`/pubs/${deal.pub?.id}`}
+                  href={`/pubs/${deal.pub?.slug}`}
                   className="bg-gradient-to-br from-amber-900/30 to-stout-800 rounded-lg p-4 border border-amber-700/50 hover:border-amber-600 transition-colors"
                 >
                   <div className="flex justify-between items-start mb-2">

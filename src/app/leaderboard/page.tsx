@@ -16,7 +16,7 @@ async function getCheapestByDrink() {
         .from('prices')
         .select(`
           *,
-          pub:pubs(id, name, address)
+          pub:pubs(id, name, address, slug)
         `)
         .eq('drink_id', drink.id)
         .order('price', { ascending: true })
@@ -96,7 +96,7 @@ export default async function LeaderboardPage() {
                     prices.slice(0, 3).map((price, index) => (
                       <Link
                         key={price.id}
-                        href={`/pubs/${price.pub?.id}`}
+                        href={`/pubs/${price.pub?.slug}`}
                         className="flex items-center gap-3 px-4 py-3 hover:bg-stout-700/50 transition-colors"
                       >
                         <span
@@ -135,7 +135,7 @@ export default async function LeaderboardPage() {
               topRatedPubs.map((pub, index) => (
                 <Link
                   key={pub.id}
-                  href={`/pubs/${pub.id}`}
+                  href={`/pubs/${pub.slug}`}
                   className="flex items-center gap-4 p-4 hover:bg-stout-700/50 transition-colors"
                 >
                   <span
