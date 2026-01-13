@@ -82,7 +82,7 @@ export default function SearchBar() {
     <div ref={containerRef} className="relative">
       <div className="relative">
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stout-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stout-400"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -105,7 +105,7 @@ export default function SearchBar() {
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search pubs..."
-          className="w-full pl-9 pr-4 py-2 bg-stout-800/50 border border-stout-600 rounded-lg text-stout-900 placeholder-stout-500 focus:outline-none focus:border-stout-500 focus:bg-stout-800/70 text-sm"
+          className="w-full pl-9 pr-4 py-2 bg-cream-300 border border-cream-400 rounded-lg text-stout-900 placeholder-stout-500 focus:outline-none focus:ring-2 focus:ring-stout-400 focus:border-stout-400 text-sm shadow-inner"
         />
       </div>
 

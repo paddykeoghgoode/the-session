@@ -30,6 +30,7 @@ const config: Config = {
           300: '#f5e6d0',
           400: '#e8d4b5',
           500: '#d4bc94',
+          600: '#c9a87a',
         },
         'irish-green': {
           500: '#169b62',

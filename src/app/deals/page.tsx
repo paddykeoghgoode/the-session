@@ -25,11 +25,19 @@ export default async function DealsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-cream-100 mb-2">Current Deals</h1>
-        <p className="text-stout-400">
-          Happy hours, specials, and limited-time offers from pubs across Dublin
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-cream-100 mb-2">Current Deals</h1>
+          <p className="text-stout-400">
+            Happy hours, specials, and limited-time offers from pubs across Dublin
+          </p>
+        </div>
+        <Link
+          href="/deals/add"
+          className="inline-block bg-irish-green-600 hover:bg-irish-green-700 text-white font-medium px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+        >
+          + Add a Deal
+        </Link>
       </div>
 
       {deals.length > 0 ? (
@@ -98,10 +106,10 @@ export default async function DealsPage() {
             Know about a deal? Help the community by sharing it!
           </p>
           <Link
-            href="/pubs"
+            href="/deals/add"
             className="inline-block bg-irish-green-600 hover:bg-irish-green-700 text-white font-medium px-6 py-2 rounded-lg transition-colors"
           >
-            Browse Pubs
+            Add a Deal
           </Link>
         </div>
       )}

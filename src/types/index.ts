@@ -73,6 +73,8 @@ export interface Review {
   safety: number | null;
   value_for_money: number | null;
   comment: string | null;
+  is_approved: boolean;
+  moderation_note: string | null;
   created_at: string;
   // Joined fields
   pub?: Pub;
@@ -84,8 +86,32 @@ export interface Profile {
   username: string | null;
   display_name: string | null;
   is_verified_local: boolean;
+  is_trusted: boolean;
+  is_admin: boolean;
   total_contributions: number;
+  uploads_today: number;
   created_at: string;
+}
+
+export interface PubPhoto {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  storage_path: string;
+  thumbnail_path: string | null;
+  original_filename: string | null;
+  file_size: number;
+  width: number | null;
+  height: number | null;
+  caption: string | null;
+  is_approved: boolean;
+  is_primary: boolean;
+  moderation_note: string | null;
+  created_at: string;
+  approved_at: string | null;
+  // Joined fields
+  pub?: Pub;
+  profile?: Profile;
 }
 
 export interface PubWithPrices extends Pub {

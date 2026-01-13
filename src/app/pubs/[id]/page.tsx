@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createServerSupabaseClient, getUser } from '@/lib/supabase-server';
 import StarRating from '@/components/StarRating';
 import PriceTable from '@/components/PriceTable';
@@ -8,8 +9,9 @@ import ReviewForm from '@/components/ReviewForm';
 import AmenityVoting from '@/components/AmenityVoting';
 import QuickAddPrice from '@/components/QuickAddPrice';
 import ShareButton from '@/components/ShareButton';
+import PhotoUpload from '@/components/PhotoUpload';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, type DayOfWeek } from '@/lib/utils';
-import type { Pub, Price, Review } from '@/types';
+import type { Pub, Price, Review, PubPhoto } from '@/types';
 
 export const revalidate = 60;
 
@@ -45,16 +47,30 @@ async function getReviews(pubId: string): Promise<Review[]> {
       profile:profiles(username, display_name, is_verified_local)
     `)
     .eq('pub_id', pubId)
+    .eq('is_approved', true)
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
+async function getPhotos(pubId: string): Promise<PubPhoto[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('pub_photos')
+    .select('*')
+    .eq('pub_id', pubId)
+    .eq('is_approved', true)
+    .order('is_primary', { ascending: false })
     .order('created_at', { ascending: false });
   return data || [];
 }
 
 export default async function PubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [pub, prices, reviews, user] = await Promise.all([
+  const [pub, prices, reviews, photos, user] = await Promise.all([
     getPub(id),
     getPrices(id),
     getReviews(id),
+    getPhotos(id),
     getUser(),
   ]);
 
@@ -238,6 +254,33 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
             <PriceTable prices={prices} userId={user?.id} />
           </section>
 
+          {/* Photos Section */}
+          {photos.length > 0 && (
+            <section>
+              <h2 className="text-xl font-bold text-cream-100 mb-4">Photos</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {photos.slice(0, 6).map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="relative aspect-square bg-stout-800 rounded-lg overflow-hidden border border-stout-700"
+                  >
+                    <Image
+                      src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pub-photos/${photo.storage_path}`}
+                      alt={photo.caption || pub.name}
+                      fill
+                      className="object-cover hover:scale-105 transition-transform"
+                    />
+                    {photo.caption && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                        <p className="text-white text-xs truncate">{photo.caption}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Reviews Section */}
           <section>
             <h2 className="text-xl font-bold text-cream-100 mb-4">Reviews</h2>
@@ -333,6 +376,9 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
                 <h3 className="text-lg font-semibold text-cream-100 mb-4">Write a Review</h3>
                 <ReviewForm pubId={pub.id} hasFood={pub.has_food} />
               </div>
+
+              {/* Add Photo */}
+              <PhotoUpload pubId={pub.id} userId={user.id} />
             </>
           ) : (
             <div className="bg-stout-800 rounded-lg border border-stout-700 p-6 text-center">
