@@ -45,7 +45,7 @@ export default async function DealsPage() {
           {deals.map((deal) => (
             <Link
               key={deal.id}
-              href={`/pubs/${deal.pub?.id}`}
+              href={`/pubs/${deal.pub?.slug}`}
               className="bg-gradient-to-br from-amber-900/30 to-stout-800 rounded-lg border border-amber-700/50 hover:border-amber-600 transition-all hover:scale-[1.02] p-6"
             >
               {/* Deal Badge */}

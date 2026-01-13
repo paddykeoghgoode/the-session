@@ -21,7 +21,7 @@ export default function PubCard({ pub }: PubCardProps) {
         )}
 
         <div className="flex justify-between items-start mb-2">
-          <Link href={`/pubs/${pub.id}`}>
+          <Link href={`/pubs/${pub.slug}`}>
             <h3 className={`text-lg font-semibold hover:text-irish-green-500 transition-colors ${isClosed ? 'text-stout-400' : 'text-cream-100'}`}>
               {pub.name}
             </h3>
@@ -74,7 +74,7 @@ export default function PubCard({ pub }: PubCardProps) {
         {/* Actions */}
         <div className="flex gap-2">
           <Link
-            href={`/pubs/${pub.id}`}
+            href={`/pubs/${pub.slug}`}
             className="flex-1 bg-stout-700 hover:bg-stout-600 text-cream-100 text-sm py-2 px-3 rounded text-center transition-colors"
           >
             View Prices
