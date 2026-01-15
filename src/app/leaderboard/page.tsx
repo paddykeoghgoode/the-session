@@ -156,7 +156,7 @@ export default async function LeaderboardPage() {
                     <p className="text-sm text-stout-400 truncate">{pub.address}</p>
                   </div>
                   <div className="text-right">
-                    <StarRating rating={pub.avg_rating || 0} size="sm" />
+                    <StarRating rating={pub.avg_rating || 0} size="sm" showValue />
                     <p className="text-xs text-stout-400 mt-1">
                       {pub.review_count} {pub.review_count === 1 ? 'review' : 'reviews'}
                     </p>

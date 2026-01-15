@@ -11,7 +11,7 @@ import QuickAddPrice from '@/components/QuickAddPrice';
 import ShareButton from '@/components/ShareButton';
 import PhotoUpload from '@/components/PhotoUpload';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, type DayOfWeek } from '@/lib/utils';
-import type { Pub, Price, Review, PubPhoto } from '@/types';
+import type { Pub, Price, Review, PubPhoto, Drink } from '@/types';
 
 export const revalidate = 60;
 
@@ -80,6 +80,15 @@ async function getPhotos(pubId: string): Promise<PubPhoto[]> {
   return data || [];
 }
 
+async function getDrinks(): Promise<Drink[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('drinks')
+    .select('*')
+    .order('name');
+  return data || [];
+}
+
 export default async function PubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: idOrSlug } = await params;
 
@@ -91,10 +100,11 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
   }
 
   // Use the actual pub ID for related queries
-  const [prices, reviews, photos, user] = await Promise.all([
+  const [prices, reviews, photos, drinks, user] = await Promise.all([
     getPrices(pub.id),
     getReviews(pub.id),
     getPhotos(pub.id),
+    getDrinks(),
     getUser(),
   ]);
 
@@ -295,7 +305,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
           {/* Prices Section */}
           <section>
             <h2 className="text-xl font-bold text-cream-100 mb-4">Pint Prices</h2>
-            <PriceTable prices={prices} userId={user?.id} />
+            <PriceTable prices={prices} userId={user?.id} pubId={pub.id} drinks={drinks} />
           </section>
 
           {/* Photos Section */}

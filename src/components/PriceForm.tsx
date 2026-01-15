@@ -15,9 +15,13 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
   const [selectedDrink, setSelectedDrink] = useState<number | null>(null);
   const [price, setPrice] = useState('');
   const [isDeal, setIsDeal] = useState(false);
-  const [dealType, setDealType] = useState<'drink_only' | 'food_combo'>('drink_only');
+  const [dealType, setDealType] = useState<'drink_only' | 'food_combo' | 'food_only'>('drink_only');
+  const [dealTitle, setDealTitle] = useState('');
   const [foodItem, setFoodItem] = useState('');
   const [dealDescription, setDealDescription] = useState('');
+  const [dealSchedule, setDealSchedule] = useState('');
+  const [dealStartDate, setDealStartDate] = useState('');
+  const [dealEndDate, setDealEndDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -41,9 +45,17 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
     setError(null);
     setSuccess(false);
 
-    if (!selectedDrink || !price) {
-      setError('Please select a drink and enter a price');
-      return;
+    // Validation depends on deal type
+    if (isDeal && dealType === 'food_only') {
+      if (!foodItem || !price) {
+        setError('Please enter a food item and price for food-only deals');
+        return;
+      }
+    } else {
+      if (!selectedDrink || !price) {
+        setError('Please select a drink and enter a price');
+        return;
+      }
     }
 
     const priceNum = parseFloat(price);
@@ -64,12 +76,16 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
 
       const { error: insertError } = await supabase.from('prices').insert({
         pub_id: pubId,
-        drink_id: selectedDrink,
+        drink_id: dealType === 'food_only' ? null : selectedDrink,
         price: priceNum,
         is_deal: isDeal,
         deal_type: isDeal ? dealType : 'drink_only',
-        food_item: isDeal && dealType === 'food_combo' ? foodItem : null,
+        deal_title: isDeal && dealTitle ? dealTitle : null,
+        food_item: isDeal && (dealType === 'food_combo' || dealType === 'food_only') ? foodItem : null,
         deal_description: isDeal ? dealDescription : null,
+        deal_schedule: isDeal && dealSchedule ? dealSchedule : null,
+        deal_start_date: isDeal && dealStartDate ? dealStartDate : null,
+        deal_end_date: isDeal && dealEndDate ? dealEndDate : null,
         submitted_by: user.id,
       });
 
@@ -80,8 +96,12 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
       setPrice('');
       setIsDeal(false);
       setDealType('drink_only');
+      setDealTitle('');
       setFoodItem('');
       setDealDescription('');
+      setDealSchedule('');
+      setDealStartDate('');
+      setDealEndDate('');
 
       if (onSuccess) {
         onSuccess();
@@ -107,30 +127,33 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-cream-100 mb-2">
-          Select Drink
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {drinks.map((drink) => (
-            <button
-              key={drink.id}
-              type="button"
-              onClick={() => setSelectedDrink(drink.id)}
-              className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
-                selectedDrink === drink.id
-                  ? 'bg-irish-green-600 border-irish-green-500 text-white'
-                  : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
-              }`}
-            >
-              {drink.name}
-              <span className="block text-xs mt-1 opacity-75">
-                {drink.category === 'cider' ? 'Cider' : 'Beer'}
-              </span>
-            </button>
-          ))}
+      {/* Only show drink selection for non-food-only deals */}
+      {!(isDeal && dealType === 'food_only') && (
+        <div>
+          <label className="block text-sm font-medium text-cream-100 mb-2">
+            Select Drink
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {drinks.map((drink) => (
+              <button
+                key={drink.id}
+                type="button"
+                onClick={() => setSelectedDrink(drink.id)}
+                className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                  selectedDrink === drink.id
+                    ? 'bg-irish-green-600 border-irish-green-500 text-white'
+                    : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
+                }`}
+              >
+                {drink.name}
+                <span className="block text-xs mt-1 opacity-75">
+                  {drink.category === 'cider' ? 'Cider' : 'Beer'}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <label htmlFor="price" className="block text-sm font-medium text-cream-100 mb-2">
@@ -166,43 +189,69 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
       </div>
 
       {isDeal && (
-        <div className="space-y-4">
+        <div className="space-y-4 p-4 bg-stout-700/50 rounded-lg border border-amber-700/30">
           {/* Deal Type Selection */}
           <div>
             <label className="block text-sm font-medium text-cream-100 mb-2">
               Deal Type
             </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setDealType('drink_only')}
-                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                onClick={() => { setDealType('drink_only'); setFoodItem(''); }}
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                   dealType === 'drink_only'
                     ? 'bg-irish-green-600 border-irish-green-500 text-white'
                     : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
                 }`}
               >
-                Drink Only
+                Drink
               </button>
               <button
                 type="button"
                 onClick={() => setDealType('food_combo')}
-                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                   dealType === 'food_combo'
                     ? 'bg-amber-600 border-amber-500 text-white'
                     : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
                 }`}
               >
-                Food + Drink
+                Combo
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDealType('food_only'); setSelectedDrink(null); }}
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  dealType === 'food_only'
+                    ? 'bg-orange-600 border-orange-500 text-white'
+                    : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
+                }`}
+              >
+                Food
               </button>
             </div>
           </div>
 
-          {/* Food Item Selection (for combo deals) */}
-          {dealType === 'food_combo' && (
+          {/* Deal Title */}
+          <div>
+            <label htmlFor="dealTitle" className="block text-sm font-medium text-cream-100 mb-2">
+              Deal Title
+            </label>
+            <input
+              type="text"
+              id="dealTitle"
+              value={dealTitle}
+              onChange={(e) => setDealTitle(e.target.value)}
+              placeholder="e.g., Happy Hour Special, Lunch Deal"
+              className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 placeholder-stout-400 focus:outline-none focus:border-irish-green-500"
+            />
+          </div>
+
+          {/* Food Item Selection (for combo and food-only deals) */}
+          {(dealType === 'food_combo' || dealType === 'food_only') && (
             <div>
               <label htmlFor="foodItem" className="block text-sm font-medium text-cream-100 mb-2">
-                Food Item
+                Food Item {dealType === 'food_only' && <span className="text-red-400">*</span>}
               </label>
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -236,26 +285,73 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
           {/* Deal Description */}
           <div>
             <label htmlFor="dealDescription" className="block text-sm font-medium text-cream-100 mb-2">
-              Deal Description
+              Description
             </label>
             <input
               type="text"
               id="dealDescription"
               value={dealDescription}
               onChange={(e) => setDealDescription(e.target.value)}
-              placeholder={dealType === 'food_combo' ? 'e.g., Lunch special 12-3pm' : 'e.g., Happy Hour 5-7pm'}
+              placeholder="Additional details about the deal..."
               className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 placeholder-stout-400 focus:outline-none focus:border-irish-green-500"
             />
+          </div>
+
+          {/* Schedule */}
+          <div>
+            <label htmlFor="dealSchedule" className="block text-sm font-medium text-cream-100 mb-2">
+              Schedule (optional)
+            </label>
+            <input
+              type="text"
+              id="dealSchedule"
+              value={dealSchedule}
+              onChange={(e) => setDealSchedule(e.target.value)}
+              placeholder="e.g., Mon-Fri 5-7pm, Weekends only"
+              className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 placeholder-stout-400 focus:outline-none focus:border-irish-green-500"
+            />
+          </div>
+
+          {/* Date Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="dealStartDate" className="block text-sm font-medium text-cream-100 mb-2">
+                Start Date
+              </label>
+              <input
+                type="date"
+                id="dealStartDate"
+                value={dealStartDate}
+                onChange={(e) => setDealStartDate(e.target.value)}
+                className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-irish-green-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="dealEndDate" className="block text-sm font-medium text-cream-100 mb-2">
+                End Date
+              </label>
+              <input
+                type="date"
+                id="dealEndDate"
+                value={dealEndDate}
+                onChange={(e) => setDealEndDate(e.target.value)}
+                className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-irish-green-500"
+              />
+            </div>
           </div>
         </div>
       )}
 
       <button
         type="submit"
-        disabled={isSubmitting || !selectedDrink || !price}
+        disabled={
+          isSubmitting ||
+          !price ||
+          (isDeal && dealType === 'food_only' ? !foodItem : !selectedDrink)
+        }
         className="w-full bg-irish-green-600 hover:bg-irish-green-700 disabled:bg-stout-600 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors"
       >
-        {isSubmitting ? 'Submitting...' : 'Submit Price'}
+        {isSubmitting ? 'Submitting...' : isDeal ? 'Submit Deal' : 'Submit Price'}
       </button>
     </form>
   );

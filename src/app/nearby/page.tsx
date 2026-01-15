@@ -173,13 +173,15 @@ export default function NearbyPage() {
                       <p className="text-sm text-stout-400 truncate">{pub.address}</p>
 
                       {/* Rating */}
-                      {pub.avg_rating && pub.avg_rating > 0 && (
+                      {pub.avg_rating && pub.avg_rating > 0 ? (
                         <div className="flex items-center gap-2 mt-2">
-                          <StarRating rating={pub.avg_rating} size="sm" />
+                          <StarRating rating={pub.avg_rating} size="sm" showValue />
                           <span className="text-xs text-stout-400">
-                            ({pub.review_count || 0})
+                            ({pub.review_count || 0} {(pub.review_count || 0) === 1 ? 'review' : 'reviews'})
                           </span>
                         </div>
+                      ) : (
+                        <p className="text-xs text-stout-500 mt-2">No ratings yet</p>
                       )}
 
                       {/* Amenities */}

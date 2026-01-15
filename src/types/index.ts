@@ -52,12 +52,16 @@ export interface Drink {
 export interface Price {
   id: string;
   pub_id: string;
-  drink_id: number;
+  drink_id: number | null;
   price: number;
   is_deal: boolean;
   deal_description: string | null;
-  deal_type: 'drink_only' | 'food_combo';
+  deal_type: 'drink_only' | 'food_combo' | 'food_only';
+  deal_title: string | null;
   food_item: string | null;
+  deal_start_date: string | null;
+  deal_end_date: string | null;
+  deal_schedule: string | null;
   submitted_by: string;
   verified: boolean;
   upvotes: number;

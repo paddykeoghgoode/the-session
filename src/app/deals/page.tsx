@@ -51,40 +51,56 @@ export default async function DealsPage() {
               {/* Deal Badge */}
               <div className="flex items-center gap-2 mb-3">
                 <span className={`text-stout-900 text-xs font-bold px-2 py-1 rounded ${
-                  deal.deal_type === 'food_combo' ? 'bg-orange-500' : 'bg-amber-500'
+                  deal.deal_type === 'food_combo' ? 'bg-amber-500' :
+                  deal.deal_type === 'food_only' ? 'bg-orange-500' : 'bg-irish-green-500'
                 }`}>
-                  {deal.deal_type === 'food_combo' ? 'COMBO' : 'DEAL'}
+                  {deal.deal_type === 'food_combo' ? 'COMBO' :
+                   deal.deal_type === 'food_only' ? 'FOOD' : 'DRINK'}
                 </span>
-                <span className="text-sm text-stout-400">
-                  {formatRelativeTime(deal.created_at)}
-                </span>
+                {deal.deal_schedule && (
+                  <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                    {deal.deal_schedule}
+                  </span>
+                )}
               </div>
 
-              {/* Drink (and Food) and Price */}
+              {/* Deal Title or Item Name */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  {deal.deal_type === 'food_combo' && deal.food_item ? (
-                    <>
-                      <p className="text-lg font-semibold text-cream-100">
-                        {deal.drink?.name} + {deal.food_item}
-                      </p>
-                      <p className="text-sm text-stout-400">
-                        Pint & Food Combo
-                      </p>
-                    </>
+                  {deal.deal_title ? (
+                    <p className="text-lg font-semibold text-cream-100">{deal.deal_title}</p>
+                  ) : deal.deal_type === 'food_combo' && deal.food_item ? (
+                    <p className="text-lg font-semibold text-cream-100">
+                      {deal.drink?.name} + {deal.food_item}
+                    </p>
+                  ) : deal.deal_type === 'food_only' && deal.food_item ? (
+                    <p className="text-lg font-semibold text-cream-100">{deal.food_item}</p>
                   ) : (
-                    <>
-                      <p className="text-lg font-semibold text-cream-100">{deal.drink?.name}</p>
-                      <p className="text-sm text-stout-400">
-                        {deal.drink?.category === 'cider' ? 'Cider' : 'Beer'}
-                      </p>
-                    </>
+                    <p className="text-lg font-semibold text-cream-100">{deal.drink?.name}</p>
                   )}
+                  <p className="text-sm text-stout-400">
+                    {deal.deal_type === 'food_combo' ? `${deal.drink?.name} + ${deal.food_item}` :
+                     deal.deal_type === 'food_only' ? 'Food Deal' :
+                     deal.drink?.category === 'cider' ? 'Cider' : 'Beer'}
+                  </p>
                 </div>
                 <span className="text-3xl font-bold text-irish-green-500">
                   {formatPrice(deal.price)}
                 </span>
               </div>
+
+              {/* Date Range if set */}
+              {(deal.deal_start_date || deal.deal_end_date) && (
+                <div className="text-xs text-stout-400 mb-3">
+                  {deal.deal_start_date && deal.deal_end_date ? (
+                    <span>{new Date(deal.deal_start_date).toLocaleDateString()} - {new Date(deal.deal_end_date).toLocaleDateString()}</span>
+                  ) : deal.deal_end_date ? (
+                    <span>Until {new Date(deal.deal_end_date).toLocaleDateString()}</span>
+                  ) : (
+                    <span>From {new Date(deal.deal_start_date!).toLocaleDateString()}</span>
+                  )}
+                </div>
+              )}
 
               {/* Pub Info */}
               <div className="pt-3 border-t border-stout-700">

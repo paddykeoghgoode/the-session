@@ -3,17 +3,62 @@
 import { useState } from 'react';
 import { formatPrice, formatRelativeTime } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
-import type { Price } from '@/types';
+import type { Price, Drink } from '@/types';
 
 interface PriceTableProps {
   prices: Price[];
   showPubName?: boolean;
   userId?: string;
+  pubId?: string;
+  drinks?: Drink[];
 }
 
-export default function PriceTable({ prices, showPubName = false, userId }: PriceTableProps) {
+export default function PriceTable({ prices, showPubName = false, userId, pubId, drinks = [] }: PriceTableProps) {
   const [votingStates, setVotingStates] = useState<Record<string, 'up' | 'down' | null>>({});
+  const [expandedDrink, setExpandedDrink] = useState<string | null>(null);
+  const [inlinePrice, setInlinePrice] = useState('');
+  const [inlineIsDeal, setInlineIsDeal] = useState(false);
+  const [inlineDealDesc, setInlineDealDesc] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const supabase = createClient();
+
+  const handleInlineSubmit = async (drinkId: number, drinkName: string) => {
+    if (!userId || !pubId || !inlinePrice) return;
+
+    const priceNum = parseFloat(inlinePrice);
+    if (isNaN(priceNum) || priceNum <= 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('prices').insert({
+        pub_id: pubId,
+        drink_id: drinkId,
+        price: priceNum,
+        is_deal: inlineIsDeal,
+        deal_description: inlineIsDeal ? inlineDealDesc : null,
+        submitted_by: userId,
+      });
+
+      if (error) throw error;
+
+      setSubmitSuccess(drinkName);
+      setExpandedDrink(null);
+      setInlinePrice('');
+      setInlineIsDeal(false);
+      setInlineDealDesc('');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSubmitSuccess(null), 3000);
+
+      // Refresh the page to show updated prices
+      window.location.reload();
+    } catch (err) {
+      console.error('Error submitting price:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleVote = async (priceId: string, voteType: 'up' | 'down') => {
     if (!userId) return;
@@ -55,7 +100,12 @@ export default function PriceTable({ prices, showPubName = false, userId }: Pric
     return acc;
   }, {} as Record<string, Price[]>);
 
-  if (prices.length === 0) {
+  // Get drinks that don't have prices yet
+  const drinksWithoutPrices = drinks.filter(
+    (drink) => !pricesByDrink[drink.name]
+  );
+
+  if (prices.length === 0 && drinksWithoutPrices.length === 0) {
     return (
       <div className="text-center py-8 text-stout-400">
         <p>No prices submitted yet.</p>
@@ -65,26 +115,109 @@ export default function PriceTable({ prices, showPubName = false, userId }: Pric
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Success toast */}
+      {submitSuccess && (
+        <div className="bg-irish-green-500/10 border border-irish-green-500 text-irish-green-400 px-4 py-3 rounded flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Price for {submitSuccess} submitted! Thanks for contributing.
+        </div>
+      )}
+
+      {/* Drinks with prices */}
       {Object.entries(pricesByDrink).map(([drinkName, drinkPrices]) => {
         // Get the most recent price for each drink
         const latestPrice = drinkPrices.sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         )[0];
+        const drinkId = latestPrice.drink?.id;
+        const isExpanded = expandedDrink === drinkName;
 
         return (
           <div key={drinkName} className="bg-stout-800 rounded-lg border border-stout-700 overflow-hidden">
-            <div className="px-4 py-3 bg-stout-700 flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => {
+                if (userId && pubId) {
+                  setExpandedDrink(isExpanded ? null : drinkName);
+                  setInlinePrice('');
+                  setInlineIsDeal(false);
+                  setInlineDealDesc('');
+                }
+              }}
+              className={`w-full px-4 py-3 bg-stout-700 flex justify-between items-center ${
+                userId && pubId ? 'hover:bg-stout-600 cursor-pointer' : ''
+              } transition-colors`}
+            >
               <div className="flex items-center gap-2">
                 <span className="text-cream-100 font-medium">{drinkName}</span>
                 {latestPrice.drink?.category === 'cider' && (
                   <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded">Cider</span>
                 )}
+                {userId && pubId && (
+                  <span className="text-xs text-stout-400 ml-2">
+                    {isExpanded ? '(click to close)' : '(click to add price)'}
+                  </span>
+                )}
               </div>
               <span className="text-2xl font-bold text-irish-green-500">
                 {formatPrice(latestPrice.price)}
               </span>
-            </div>
+            </button>
+
+            {/* Inline price entry form */}
+            {isExpanded && userId && pubId && drinkId && (
+              <div className="px-4 py-3 bg-stout-750 border-t border-stout-600">
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div className="flex-1 min-w-[120px]">
+                    <label className="block text-xs text-stout-400 mb-1">Price</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-stout-400 text-sm">&euro;</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={inlinePrice}
+                        onChange={(e) => setInlinePrice(e.target.value)}
+                        placeholder="6.50"
+                        className="w-full pl-6 pr-2 py-2 bg-stout-700 border border-stout-600 rounded text-cream-100 placeholder-stout-500 text-sm focus:outline-none focus:border-irish-green-500"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer pb-2">
+                    <input
+                      type="checkbox"
+                      checked={inlineIsDeal}
+                      onChange={(e) => setInlineIsDeal(e.target.checked)}
+                      className="w-4 h-4 rounded border-stout-600 bg-stout-700 text-irish-green-600"
+                    />
+                    <span className="text-sm text-stout-300">Deal?</span>
+                  </label>
+                  {inlineIsDeal && (
+                    <div className="flex-1 min-w-[150px]">
+                      <input
+                        type="text"
+                        value={inlineDealDesc}
+                        onChange={(e) => setInlineDealDesc(e.target.value)}
+                        placeholder="e.g., Happy Hour"
+                        className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded text-cream-100 placeholder-stout-500 text-sm focus:outline-none focus:border-irish-green-500"
+                      />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleInlineSubmit(drinkId, drinkName)}
+                    disabled={isSubmitting || !inlinePrice}
+                    className="px-4 py-2 bg-irish-green-600 hover:bg-irish-green-700 disabled:bg-stout-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Add'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="divide-y divide-stout-700">
               {drinkPrices.slice(0, 3).map((price) => (
@@ -163,6 +296,71 @@ export default function PriceTable({ prices, showPubName = false, userId }: Pric
           </div>
         );
       })}
+
+      {/* Drinks without prices - show only if user is logged in and we have pubId */}
+      {userId && pubId && drinksWithoutPrices.length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-sm font-medium text-stout-400 mb-3">Add prices for other drinks:</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {drinksWithoutPrices.map((drink) => {
+              const isExpanded = expandedDrink === `new-${drink.name}`;
+
+              return (
+                <div key={drink.id} className="bg-stout-800 rounded-lg border border-stout-700 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpandedDrink(isExpanded ? null : `new-${drink.name}`);
+                      setInlinePrice('');
+                      setInlineIsDeal(false);
+                      setInlineDealDesc('');
+                    }}
+                    className="w-full px-3 py-2 flex items-center justify-between hover:bg-stout-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-cream-100 text-sm">{drink.name}</span>
+                      {drink.category === 'cider' && (
+                        <span className="text-xs bg-amber-600 text-white px-1.5 py-0.5 rounded">Cider</span>
+                      )}
+                    </div>
+                    <svg className={`w-4 h-4 text-stout-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-3 py-2 bg-stout-750 border-t border-stout-600">
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-stout-400 text-sm">&euro;</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={inlinePrice}
+                            onChange={(e) => setInlinePrice(e.target.value)}
+                            placeholder="Price"
+                            className="w-full pl-6 pr-2 py-1.5 bg-stout-700 border border-stout-600 rounded text-cream-100 placeholder-stout-500 text-sm focus:outline-none focus:border-irish-green-500"
+                            autoFocus
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleInlineSubmit(drink.id, drink.name)}
+                          disabled={isSubmitting || !inlinePrice}
+                          className="w-full px-3 py-1.5 bg-irish-green-600 hover:bg-irish-green-700 disabled:bg-stout-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
+                        >
+                          {isSubmitting ? 'Saving...' : 'Add Price'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

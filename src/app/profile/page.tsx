@@ -180,7 +180,7 @@ export default async function ProfilePage() {
                           {formatDate(review.created_at)}
                         </p>
                       </div>
-                      <StarRating rating={avg} size="sm" />
+                      <StarRating rating={avg} size="sm" showValue />
                     </div>
                     {review.comment && (
                       <p className="text-sm text-stout-300 line-clamp-2">{review.comment}</p>

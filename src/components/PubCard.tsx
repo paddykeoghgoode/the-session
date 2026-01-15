@@ -38,13 +38,13 @@ export default function PubCard({ pub }: PubCardProps) {
         {/* Rating */}
         {pub.avg_rating && pub.avg_rating > 0 ? (
           <div className="flex items-center gap-2 mb-3">
-            <StarRating rating={pub.avg_rating} size="sm" />
+            <StarRating rating={pub.avg_rating} size="sm" showValue />
             <span className="text-sm text-stout-400">
               ({pub.review_count} {pub.review_count === 1 ? 'review' : 'reviews'})
             </span>
           </div>
         ) : (
-          <p className="text-sm text-stout-500 mb-3">No reviews yet</p>
+          <p className="text-sm text-stout-500 mb-3">No ratings yet</p>
         )}
 
         {/* Amenities */}
