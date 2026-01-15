@@ -11,6 +11,10 @@ interface AmenityVotingProps {
     has_live_music: boolean;
     shows_sports: boolean;
     has_outdoor_seating: boolean;
+    has_pool: boolean;
+    has_darts: boolean;
+    has_board_games: boolean;
+    is_speakeasy: boolean;
   };
   userId?: string;
 }
@@ -21,12 +25,20 @@ export default function AmenityVoting({ pubId, currentValues, userId }: AmenityV
     has_live_music: null,
     shows_sports: null,
     has_outdoor_seating: null,
+    has_pool: null,
+    has_darts: null,
+    has_board_games: null,
+    is_speakeasy: null,
   });
   const [summaries, setSummaries] = useState<Record<AmenityKey, AmenityVoteSummary | null>>({
     has_food: null,
     has_live_music: null,
     shows_sports: null,
     has_outdoor_seating: null,
+    has_pool: null,
+    has_darts: null,
+    has_board_games: null,
+    is_speakeasy: null,
   });
   const [loading, setLoading] = useState<AmenityKey | null>(null);
   const supabase = createClient();
@@ -46,6 +58,10 @@ export default function AmenityVoting({ pubId, currentValues, userId }: AmenityV
           has_live_music: null,
           shows_sports: null,
           has_outdoor_seating: null,
+          has_pool: null,
+          has_darts: null,
+          has_board_games: null,
+          is_speakeasy: null,
         };
         summaryData.forEach((s) => {
           summaryMap[s.amenity as AmenityKey] = s;
@@ -67,6 +83,10 @@ export default function AmenityVoting({ pubId, currentValues, userId }: AmenityV
             has_live_music: null,
             shows_sports: null,
             has_outdoor_seating: null,
+            has_pool: null,
+            has_darts: null,
+            has_board_games: null,
+            is_speakeasy: null,
           };
           userVotes.forEach((v) => {
             voteMap[v.amenity as AmenityKey] = v.vote;

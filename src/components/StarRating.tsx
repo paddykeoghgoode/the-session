@@ -86,7 +86,7 @@ export default function StarRating({
       })}
       {showValue && rating > 0 && (
         <span className="ml-1.5 text-sm font-medium text-cream-100">
-          {rating.toFixed(1)}
+          {rating.toFixed(2)}/{maxRating}
         </span>
       )}
     </div>

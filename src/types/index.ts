@@ -13,6 +13,10 @@ export interface Pub {
   has_outdoor_seating: boolean;
   shows_sports: boolean;
   has_live_music: boolean;
+  has_pool: boolean;
+  has_darts: boolean;
+  has_board_games: boolean;
+  is_speakeasy: boolean;
   is_permanently_closed: boolean;
   // Opening hours (per day)
   hours_monday_open: string | null;
@@ -52,6 +56,8 @@ export interface Price {
   price: number;
   is_deal: boolean;
   deal_description: string | null;
+  deal_type: 'drink_only' | 'food_combo';
+  food_item: string | null;
   submitted_by: string;
   verified: boolean;
   upvotes: number;
@@ -61,6 +67,12 @@ export interface Price {
   drink?: Drink;
   pub?: Pub;
   submitter?: Profile;
+}
+
+export interface FoodItem {
+  id: number;
+  name: string;
+  category: 'sandwich' | 'hot_meal' | 'snack' | 'other';
 }
 
 export interface Review {
@@ -188,7 +200,7 @@ export const RATING_CATEGORIES = [
 ] as const;
 
 // Amenity types
-export type AmenityKey = 'has_food' | 'has_live_music' | 'shows_sports' | 'has_outdoor_seating';
+export type AmenityKey = 'has_food' | 'has_live_music' | 'shows_sports' | 'has_outdoor_seating' | 'has_pool' | 'has_darts' | 'has_board_games' | 'is_speakeasy';
 
 export interface AmenityVote {
   id: string;
@@ -212,4 +224,8 @@ export const AMENITIES: { key: AmenityKey; label: string; icon: string }[] = [
   { key: 'has_live_music', label: 'Live Music', icon: '🎵' },
   { key: 'shows_sports', label: 'Shows Sports', icon: '⚽' },
   { key: 'has_outdoor_seating', label: 'Outdoor Seating', icon: '🌳' },
+  { key: 'has_pool', label: 'Pool Table', icon: '🎱' },
+  { key: 'has_darts', label: 'Darts', icon: '🎯' },
+  { key: 'has_board_games', label: 'Board Games', icon: '🎲' },
+  { key: 'is_speakeasy', label: 'Speakeasy', icon: '🕵️' },
 ];

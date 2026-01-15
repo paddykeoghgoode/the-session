@@ -15,14 +15,30 @@ import type { Pub, Price, Review, PubPhoto } from '@/types';
 
 export const revalidate = 60;
 
-async function getPub(id: string): Promise<Pub | null> {
+async function getPub(idOrSlug: string): Promise<Pub | null> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from('pubs')
-    .select('*')
-    .eq('id', id)
-    .single();
-  return data;
+
+  // Check if it's a UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidRegex.test(idOrSlug);
+
+  if (isUuid) {
+    // Query by ID
+    const { data } = await supabase
+      .from('pubs')
+      .select('*')
+      .eq('id', idOrSlug)
+      .single();
+    return data;
+  } else {
+    // Query by slug
+    const { data } = await supabase
+      .from('pubs')
+      .select('*')
+      .eq('slug', idOrSlug)
+      .single();
+    return data;
+  }
 }
 
 async function getPrices(pubId: string): Promise<Price[]> {
@@ -65,18 +81,22 @@ async function getPhotos(pubId: string): Promise<PubPhoto[]> {
 }
 
 export default async function PubPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const [pub, prices, reviews, photos, user] = await Promise.all([
-    getPub(id),
-    getPrices(id),
-    getReviews(id),
-    getPhotos(id),
-    getUser(),
-  ]);
+  const { id: idOrSlug } = await params;
+
+  // First get the pub (by ID or slug)
+  const pub = await getPub(idOrSlug);
 
   if (!pub) {
     notFound();
   }
+
+  // Use the actual pub ID for related queries
+  const [prices, reviews, photos, user] = await Promise.all([
+    getPrices(pub.id),
+    getReviews(pub.id),
+    getPhotos(pub.id),
+    getUser(),
+  ]);
 
   // Calculate average rating (exclude food rating if pub doesn't serve food)
   const excludeFood = !pub.has_food;
@@ -171,6 +191,30 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
                 <span className="text-stout-400">Outdoor Seating:</span>
                 <span className={pub.has_outdoor_seating ? 'text-irish-green-500' : 'text-stout-500'}>
                   {pub.has_outdoor_seating ? 'Yes' : 'No'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stout-400">Pool Table:</span>
+                <span className={pub.has_pool ? 'text-irish-green-500' : 'text-stout-500'}>
+                  {pub.has_pool ? 'Yes' : 'No'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stout-400">Darts:</span>
+                <span className={pub.has_darts ? 'text-irish-green-500' : 'text-stout-500'}>
+                  {pub.has_darts ? 'Yes' : 'No'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stout-400">Board Games:</span>
+                <span className={pub.has_board_games ? 'text-irish-green-500' : 'text-stout-500'}>
+                  {pub.has_board_games ? 'Yes' : 'No'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stout-400">Speakeasy:</span>
+                <span className={pub.is_speakeasy ? 'text-irish-green-500' : 'text-stout-500'}>
+                  {pub.is_speakeasy ? 'Yes' : 'No'}
                 </span>
               </div>
             </div>
@@ -403,6 +447,10 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               has_live_music: pub.has_live_music,
               shows_sports: pub.shows_sports,
               has_outdoor_seating: pub.has_outdoor_seating,
+              has_pool: pub.has_pool,
+              has_darts: pub.has_darts,
+              has_board_games: pub.has_board_games,
+              is_speakeasy: pub.is_speakeasy,
             }}
             userId={user?.id}
           />

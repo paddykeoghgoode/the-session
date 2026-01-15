@@ -50,21 +50,36 @@ export default async function DealsPage() {
             >
               {/* Deal Badge */}
               <div className="flex items-center gap-2 mb-3">
-                <span className="bg-amber-500 text-stout-900 text-xs font-bold px-2 py-1 rounded">
-                  DEAL
+                <span className={`text-stout-900 text-xs font-bold px-2 py-1 rounded ${
+                  deal.deal_type === 'food_combo' ? 'bg-orange-500' : 'bg-amber-500'
+                }`}>
+                  {deal.deal_type === 'food_combo' ? 'COMBO' : 'DEAL'}
                 </span>
                 <span className="text-sm text-stout-400">
                   {formatRelativeTime(deal.created_at)}
                 </span>
               </div>
 
-              {/* Drink and Price */}
+              {/* Drink (and Food) and Price */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <p className="text-lg font-semibold text-cream-100">{deal.drink?.name}</p>
-                  <p className="text-sm text-stout-400">
-                    {deal.drink?.category === 'cider' ? 'Cider' : 'Beer'}
-                  </p>
+                  {deal.deal_type === 'food_combo' && deal.food_item ? (
+                    <>
+                      <p className="text-lg font-semibold text-cream-100">
+                        {deal.drink?.name} + {deal.food_item}
+                      </p>
+                      <p className="text-sm text-stout-400">
+                        Pint & Food Combo
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg font-semibold text-cream-100">{deal.drink?.name}</p>
+                      <p className="text-sm text-stout-400">
+                        {deal.drink?.category === 'cider' ? 'Cider' : 'Beer'}
+                      </p>
+                    </>
+                  )}
                 </div>
                 <span className="text-3xl font-bold text-irish-green-500">
                   {formatPrice(deal.price)}

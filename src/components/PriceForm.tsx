@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
-import type { Drink } from '@/types';
+import type { Drink, FoodItem } from '@/types';
 
 interface PriceFormProps {
   pubId: string;
@@ -11,9 +11,12 @@ interface PriceFormProps {
 
 export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
   const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [selectedDrink, setSelectedDrink] = useState<number | null>(null);
   const [price, setPrice] = useState('');
   const [isDeal, setIsDeal] = useState(false);
+  const [dealType, setDealType] = useState<'drink_only' | 'food_combo'>('drink_only');
+  const [foodItem, setFoodItem] = useState('');
   const [dealDescription, setDealDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,13 +25,15 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchDrinks = async () => {
-      const { data } = await supabase.from('drinks').select('*').order('name');
-      if (data) {
-        setDrinks(data);
-      }
+    const fetchData = async () => {
+      const [drinksRes, foodRes] = await Promise.all([
+        supabase.from('drinks').select('*').order('name'),
+        supabase.from('food_items').select('*').order('name'),
+      ]);
+      if (drinksRes.data) setDrinks(drinksRes.data);
+      if (foodRes.data) setFoodItems(foodRes.data);
     };
-    fetchDrinks();
+    fetchData();
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,6 +67,8 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
         drink_id: selectedDrink,
         price: priceNum,
         is_deal: isDeal,
+        deal_type: isDeal ? dealType : 'drink_only',
+        food_item: isDeal && dealType === 'food_combo' ? foodItem : null,
         deal_description: isDeal ? dealDescription : null,
         submitted_by: user.id,
       });
@@ -72,6 +79,8 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
       setSelectedDrink(null);
       setPrice('');
       setIsDeal(false);
+      setDealType('drink_only');
+      setFoodItem('');
       setDealDescription('');
 
       if (onSuccess) {
@@ -157,18 +166,87 @@ export default function PriceForm({ pubId, onSuccess }: PriceFormProps) {
       </div>
 
       {isDeal && (
-        <div>
-          <label htmlFor="dealDescription" className="block text-sm font-medium text-cream-100 mb-2">
-            Deal Description
-          </label>
-          <input
-            type="text"
-            id="dealDescription"
-            value={dealDescription}
-            onChange={(e) => setDealDescription(e.target.value)}
-            placeholder="e.g., Happy Hour 5-7pm"
-            className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 placeholder-stout-400 focus:outline-none focus:border-irish-green-500"
-          />
+        <div className="space-y-4">
+          {/* Deal Type Selection */}
+          <div>
+            <label className="block text-sm font-medium text-cream-100 mb-2">
+              Deal Type
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDealType('drink_only')}
+                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  dealType === 'drink_only'
+                    ? 'bg-irish-green-600 border-irish-green-500 text-white'
+                    : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
+                }`}
+              >
+                Drink Only
+              </button>
+              <button
+                type="button"
+                onClick={() => setDealType('food_combo')}
+                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  dealType === 'food_combo'
+                    ? 'bg-amber-600 border-amber-500 text-white'
+                    : 'bg-stout-700 border-stout-600 text-stout-200 hover:border-stout-500'
+                }`}
+              >
+                Food + Drink
+              </button>
+            </div>
+          </div>
+
+          {/* Food Item Selection (for combo deals) */}
+          {dealType === 'food_combo' && (
+            <div>
+              <label htmlFor="foodItem" className="block text-sm font-medium text-cream-100 mb-2">
+                Food Item
+              </label>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {foodItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setFoodItem(item.name)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        foodItem === item.name
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-stout-700 text-stout-300 hover:bg-stout-600'
+                      }`}
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  id="foodItem"
+                  value={foodItem}
+                  onChange={(e) => setFoodItem(e.target.value)}
+                  placeholder="Or type a custom food item..."
+                  className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 placeholder-stout-400 focus:outline-none focus:border-irish-green-500"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Deal Description */}
+          <div>
+            <label htmlFor="dealDescription" className="block text-sm font-medium text-cream-100 mb-2">
+              Deal Description
+            </label>
+            <input
+              type="text"
+              id="dealDescription"
+              value={dealDescription}
+              onChange={(e) => setDealDescription(e.target.value)}
+              placeholder={dealType === 'food_combo' ? 'e.g., Lunch special 12-3pm' : 'e.g., Happy Hour 5-7pm'}
+              className="w-full px-4 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 placeholder-stout-400 focus:outline-none focus:border-irish-green-500"
+            />
+          </div>
         </div>
       )}
 
