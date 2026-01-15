@@ -17,7 +17,39 @@ export default function NearbyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [maxDistance, setMaxDistance] = useState<number>(2); // km
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<'distance' | 'price' | 'rating'>('distance');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    hasFood: false,
+    hasOutdoor: false,
+    openNow: false,
+  });
   const supabase = createClient();
+
+  // Check if pub is currently open
+  const isOpenNow = (pub: Pub): boolean => {
+    const now = new Date();
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const today = days[now.getDay()] as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+    const openKey = `hours_${today}_open` as keyof Pub;
+    const closeKey = `hours_${today}_close` as keyof Pub;
+    const openTime = pub[openKey] as string | null;
+    const closeTime = pub[closeKey] as string | null;
+
+    if (!openTime || !closeTime) return false;
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const [openH, openM] = openTime.split(':').map(Number);
+    const [closeH, closeM] = closeTime.split(':').map(Number);
+    const openMinutes = openH * 60 + openM;
+    let closeMinutes = closeH * 60 + closeM;
+
+    // Handle closing after midnight
+    if (closeMinutes < openMinutes) closeMinutes += 24 * 60;
+
+    return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+  };
 
   // Get user's location
   useEffect(() => {
@@ -68,8 +100,8 @@ export default function NearbyPage() {
       }
 
       if (data) {
-        // Calculate distance and sort
-        const pubsWithDistance = data
+        // Calculate distance, apply filters, and sort
+        let pubsWithDistance = data
           .map((pub) => ({
             ...pub,
             distance: getDistanceKm(
@@ -79,8 +111,40 @@ export default function NearbyPage() {
               pub.longitude!
             ),
           }))
-          .filter((pub) => pub.distance <= maxDistance)
-          .sort((a, b) => a.distance - b.distance);
+          .filter((pub) => pub.distance <= maxDistance);
+
+        // Apply filters
+        if (filters.hasFood) {
+          pubsWithDistance = pubsWithDistance.filter(p => p.has_food);
+        }
+        if (filters.hasOutdoor) {
+          pubsWithDistance = pubsWithDistance.filter(p => p.has_outdoor_seating);
+        }
+        if (filters.openNow) {
+          pubsWithDistance = pubsWithDistance.filter(p => isOpenNow(p));
+        }
+        if (maxPrice !== null) {
+          pubsWithDistance = pubsWithDistance.filter(p =>
+            p.cheapest_guinness && p.cheapest_guinness <= maxPrice
+          );
+        }
+
+        // Sort
+        if (sortBy === 'distance') {
+          pubsWithDistance.sort((a, b) => a.distance - b.distance);
+        } else if (sortBy === 'price') {
+          pubsWithDistance.sort((a, b) => {
+            const aPrice = a.cheapest_guinness || 999;
+            const bPrice = b.cheapest_guinness || 999;
+            return aPrice - bPrice;
+          });
+        } else if (sortBy === 'rating') {
+          pubsWithDistance.sort((a, b) => {
+            const aRating = a.avg_rating || 0;
+            const bRating = b.avg_rating || 0;
+            return bRating - aRating;
+          });
+        }
 
         setPubs(pubsWithDistance);
       }
@@ -89,7 +153,7 @@ export default function NearbyPage() {
     }
 
     fetchNearbyPubs();
-  }, [location, maxDistance, supabase]);
+  }, [location, maxDistance, maxPrice, sortBy, filters, supabase]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -99,25 +163,134 @@ export default function NearbyPage() {
         <p className="text-stout-400">Find the closest pints to your location</p>
       </div>
 
-      {/* Distance Filter */}
+      {/* Filters */}
       {location && (
-        <div className="mb-6 flex items-center gap-4">
-          <span className="text-sm text-stout-400">Show pubs within:</span>
-          <div className="flex gap-2">
-            {[0.5, 1, 2, 5].map((km) => (
-              <button
-                key={km}
-                onClick={() => setMaxDistance(km)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  maxDistance === km
-                    ? 'bg-irish-green-600 text-white'
-                    : 'bg-stout-700 text-stout-300 hover:bg-stout-600'
-                }`}
+        <div className="mb-6 space-y-4">
+          {/* Quick Filters Row */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Distance */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-stout-400">Within:</span>
+              <div className="flex gap-1">
+                {[0.5, 1, 2, 5].map((km) => (
+                  <button
+                    key={km}
+                    onClick={() => setMaxDistance(km)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      maxDistance === km
+                        ? 'bg-irish-green-600 text-white'
+                        : 'bg-stout-700 text-stout-300 hover:bg-stout-600'
+                    }`}
+                  >
+                    {km < 1 ? `${km * 1000}m` : `${km}km`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sort By */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-stout-400">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'distance' | 'price' | 'rating')}
+                className="px-3 py-1.5 rounded-lg bg-stout-700 text-cream-100 text-sm border border-stout-600 focus:outline-none focus:border-irish-green-500"
               >
-                {km < 1 ? `${km * 1000}m` : `${km}km`}
-              </button>
-            ))}
+                <option value="distance">Distance</option>
+                <option value="price">Cheapest</option>
+                <option value="rating">Top Rated</option>
+              </select>
+            </div>
+
+            {/* More Filters Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1 ${
+                showFilters || filters.hasFood || filters.hasOutdoor || filters.openNow || maxPrice
+                  ? 'bg-irish-green-600 text-white'
+                  : 'bg-stout-700 text-stout-300 hover:bg-stout-600'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filters
+              {(filters.hasFood || filters.hasOutdoor || filters.openNow || maxPrice) && (
+                <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded text-xs">
+                  {[filters.hasFood, filters.hasOutdoor, filters.openNow, maxPrice].filter(Boolean).length}
+                </span>
+              )}
+            </button>
           </div>
+
+          {/* Expanded Filters */}
+          {showFilters && (
+            <div className="bg-stout-800 rounded-lg border border-stout-700 p-4 space-y-4">
+              {/* Max Price */}
+              <div>
+                <label className="block text-sm text-stout-400 mb-2">Max Guinness Price</label>
+                <div className="flex gap-2">
+                  {[null, 6, 7, 8].map((price) => (
+                    <button
+                      key={price ?? 'any'}
+                      onClick={() => setMaxPrice(price)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        maxPrice === price
+                          ? 'bg-irish-green-600 text-white'
+                          : 'bg-stout-700 text-stout-300 hover:bg-stout-600'
+                      }`}
+                    >
+                      {price === null ? 'Any' : `€${price}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Toggles */}
+              <div className="flex flex-wrap gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.openNow}
+                    onChange={(e) => setFilters({ ...filters, openNow: e.target.checked })}
+                    className="w-4 h-4 rounded border-stout-600 bg-stout-700 text-irish-green-600"
+                  />
+                  <span className="text-sm text-cream-100">Open Now</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.hasFood}
+                    onChange={(e) => setFilters({ ...filters, hasFood: e.target.checked })}
+                    className="w-4 h-4 rounded border-stout-600 bg-stout-700 text-irish-green-600"
+                  />
+                  <span className="text-sm text-cream-100">Serves Food</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.hasOutdoor}
+                    onChange={(e) => setFilters({ ...filters, hasOutdoor: e.target.checked })}
+                    className="w-4 h-4 rounded border-stout-600 bg-stout-700 text-irish-green-600"
+                  />
+                  <span className="text-sm text-cream-100">Outdoor Seating</span>
+                </label>
+              </div>
+
+              {/* Clear Filters */}
+              {(filters.hasFood || filters.hasOutdoor || filters.openNow || maxPrice) && (
+                <button
+                  onClick={() => {
+                    setFilters({ hasFood: false, hasOutdoor: false, openNow: false });
+                    setMaxPrice(null);
+                  }}
+                  className="text-sm text-stout-400 hover:text-cream-100 underline"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

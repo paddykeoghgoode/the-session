@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { createServerSupabaseClient, getUser } from '@/lib/supabase-server';
 import StarRating from '@/components/StarRating';
 import PriceTable from '@/components/PriceTable';
-import PriceForm from '@/components/PriceForm';
 import ReviewForm from '@/components/ReviewForm';
 import AmenityVoting from '@/components/AmenityVoting';
 import QuickAddPrice from '@/components/QuickAddPrice';
@@ -170,12 +169,16 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
             )}
 
             {/* Rating */}
-            <div className="flex items-center gap-3 mb-4">
-              <StarRating rating={overallRating} showValue />
-              <span className="text-stout-400">
-                ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
-              </span>
-            </div>
+            {reviews.length > 0 ? (
+              <div className="flex items-center gap-3 mb-4">
+                <StarRating rating={overallRating} showValue />
+                <span className="text-stout-400">
+                  ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            ) : (
+              <p className="text-stout-500 mb-4">No ratings yet</p>
+            )}
 
             {/* Amenities as Yes/No grid */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -299,6 +302,69 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
+      {/* Quick Decision Summary */}
+      {prices.length > 0 && (
+        <div className="bg-gradient-to-r from-stout-800 to-stout-800/50 rounded-lg border border-stout-700 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-cream-100 mb-4">At a Glance</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Cheapest Pint */}
+            {(() => {
+              const cheapest = prices.reduce((min, p) => (!min || p.price < min.price) ? p : min, prices[0]);
+              return (
+                <div className="bg-stout-700/50 rounded-lg p-3">
+                  <p className="text-xs text-stout-400 mb-1">Cheapest Pint</p>
+                  <p className="text-xl font-bold text-irish-green-500">&euro;{cheapest.price.toFixed(2)}</p>
+                  <p className="text-xs text-stout-300">{cheapest.drink?.name}</p>
+                </div>
+              );
+            })()}
+
+            {/* Active Deals */}
+            {(() => {
+              const activeDeals = prices.filter(p => p.is_deal);
+              return (
+                <div className="bg-stout-700/50 rounded-lg p-3">
+                  <p className="text-xs text-stout-400 mb-1">Active Deals</p>
+                  <p className="text-xl font-bold text-amber-500">{activeDeals.length}</p>
+                  <p className="text-xs text-stout-300">{activeDeals.length === 1 ? 'deal available' : 'deals available'}</p>
+                </div>
+              );
+            })()}
+
+            {/* Last Updated */}
+            {(() => {
+              const mostRecent = prices.reduce((latest, p) => {
+                const pDate = new Date(p.created_at);
+                return !latest || pDate > latest ? pDate : latest;
+              }, null as Date | null);
+              const daysAgo = mostRecent ? Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+              return (
+                <div className="bg-stout-700/50 rounded-lg p-3">
+                  <p className="text-xs text-stout-400 mb-1">Last Updated</p>
+                  <p className={`text-xl font-bold ${daysAgo <= 7 ? 'text-irish-green-500' : daysAgo <= 30 ? 'text-amber-500' : 'text-red-400'}`}>
+                    {daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`}
+                  </p>
+                  <p className="text-xs text-stout-300">{daysAgo <= 7 ? 'Fresh data' : daysAgo <= 30 ? 'May need update' : 'Needs confirmation'}</p>
+                </div>
+              );
+            })()}
+
+            {/* Price Range */}
+            {(() => {
+              const minPrice = Math.min(...prices.map(p => p.price));
+              const maxPrice = Math.max(...prices.map(p => p.price));
+              return (
+                <div className="bg-stout-700/50 rounded-lg p-3">
+                  <p className="text-xs text-stout-400 mb-1">Price Range</p>
+                  <p className="text-xl font-bold text-cream-100">&euro;{minPrice.toFixed(2)} - &euro;{maxPrice.toFixed(2)}</p>
+                  <p className="text-xs text-stout-300">{prices.length} {prices.length === 1 ? 'drink' : 'drinks'} tracked</p>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
@@ -419,12 +485,6 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
         <div className="space-y-6">
           {user ? (
             <>
-              {/* Add Price Form */}
-              <div className="bg-stout-800 rounded-lg border border-stout-700 p-4">
-                <h3 className="text-lg font-semibold text-cream-100 mb-4">Add a Price</h3>
-                <PriceForm pubId={pub.id} />
-              </div>
-
               {/* Add Review Form */}
               <div className="bg-stout-800 rounded-lg border border-stout-700 p-4">
                 <h3 className="text-lg font-semibold text-cream-100 mb-4">Write a Review</h3>
@@ -438,7 +498,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
             <div className="bg-stout-800 rounded-lg border border-stout-700 p-6 text-center">
               <h3 className="text-lg font-semibold text-cream-100 mb-2">Want to contribute?</h3>
               <p className="text-stout-400 mb-4">
-                Sign in to submit prices and reviews
+                Sign in to submit reviews
               </p>
               <Link
                 href="/auth/login"
