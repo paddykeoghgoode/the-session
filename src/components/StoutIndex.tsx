@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 
 interface StoutIndexData {
-  currentAvg: number | null;
-  lastWeekAvg: number | null;
-  lastMonthAvg: number | null;
-  sampleSize: number;
+  current_avg: number | null;
+  last_week_avg: number | null;
+  last_month_avg: number | null;
+  sample_size: number;
 }
 
 export default function StoutIndex() {
@@ -20,70 +20,19 @@ export default function StoutIndex() {
 
     async function fetchStoutIndex() {
       try {
-        // Get current week average
-        const now = new Date();
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        // Use the pre-calculated current_stout_index view
+        const { data: indexData, error: fetchError } = await supabase
+          .from('current_stout_index')
+          .select('*')
+          .single();
 
-        // Current average (last 30 days for more data) - Guinness only (drink_id = 1)
-        const { data: currentData, error: currentError } = await supabase
-          .from('prices')
-          .select('price')
-          .eq('drink_id', 1) // Guinness
-          .eq('is_deal', false)
-          .gte('created_at', oneMonthAgo.toISOString());
-
-        if (currentError) {
-          console.error('Error fetching current prices:', currentError);
-          setError('Failed to load prices');
-          setLoading(false);
+        if (fetchError) {
+          console.error('Error fetching stout index:', fetchError);
+          setError('Failed to load');
           return;
         }
 
-        // If no recent data, try all-time Guinness prices
-        let finalCurrentData = currentData;
-        if (!currentData || currentData.length === 0) {
-          const { data: allTimeData } = await supabase
-            .from('prices')
-            .select('price')
-            .eq('drink_id', 1) // Guinness
-            .eq('is_deal', false)
-            .order('created_at', { ascending: false })
-            .limit(100);
-          finalCurrentData = allTimeData || [];
-        }
-
-        // Last week average (7-14 days ago) - Guinness only
-        const { data: lastWeekData } = await supabase
-          .from('prices')
-          .select('price')
-          .eq('drink_id', 1) // Guinness
-          .eq('is_deal', false)
-          .gte('created_at', twoWeeksAgo.toISOString())
-          .lt('created_at', oneWeekAgo.toISOString());
-
-        // Last month average (30-60 days ago) - Guinness only
-        const { data: lastMonthData } = await supabase
-          .from('prices')
-          .select('price')
-          .eq('drink_id', 1) // Guinness
-          .eq('is_deal', false)
-          .gte('created_at', twoMonthsAgo.toISOString())
-          .lt('created_at', oneMonthAgo.toISOString());
-
-        const calcAvg = (prices: { price: number }[] | null) => {
-          if (!prices || prices.length === 0) return null;
-          return prices.reduce((sum, p) => sum + p.price, 0) / prices.length;
-        };
-
-        setData({
-          currentAvg: calcAvg(finalCurrentData),
-          lastWeekAvg: calcAvg(lastWeekData),
-          lastMonthAvg: calcAvg(lastMonthData),
-          sampleSize: finalCurrentData?.length || 0,
-        });
+        setData(indexData);
       } catch (err) {
         console.error('Error fetching stout index:', err);
         setError('Failed to load');
@@ -105,7 +54,7 @@ export default function StoutIndex() {
     );
   }
 
-  if (error || !data || data.currentAvg === null) {
+  if (error || !data || data.current_avg === null) {
     return (
       <div className="bg-gradient-to-br from-stout-800 to-stout-900 rounded-xl border border-stout-700 p-6">
         <div className="flex items-center gap-2 mb-3">
@@ -119,11 +68,11 @@ export default function StoutIndex() {
     );
   }
 
-  const changeFromLastWeek = data.lastWeekAvg
-    ? data.currentAvg - data.lastWeekAvg
+  const changeFromLastWeek = data.last_week_avg
+    ? data.current_avg - data.last_week_avg
     : null;
-  const changeFromLastMonth = data.lastMonthAvg
-    ? data.currentAvg - data.lastMonthAvg
+  const changeFromLastMonth = data.last_month_avg
+    ? data.current_avg - data.last_month_avg
     : null;
 
   return (
@@ -146,7 +95,7 @@ export default function StoutIndex() {
 
         <div className="flex items-baseline gap-2 mb-3">
           <span className="text-4xl font-bold text-irish-green-500">
-            &euro;{data.currentAvg.toFixed(2)}
+            &euro;{data.current_avg.toFixed(2)}
           </span>
           {changeFromLastMonth !== null && (
             <span className={`text-sm font-medium flex items-center gap-1 ${
@@ -173,7 +122,7 @@ export default function StoutIndex() {
             </span>
           )}
           <span>&middot;</span>
-          <span>Based on {data.sampleSize} prices</span>
+          <span>Based on {data.sample_size} prices</span>
         </div>
       </div>
     </div>
