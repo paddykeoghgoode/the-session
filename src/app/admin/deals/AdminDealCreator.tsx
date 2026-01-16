@@ -17,12 +17,14 @@ interface AdminDealCreatorProps {
 }
 
 type DealType = 'drink_only' | 'food_combo' | 'food_only';
+type DealTarget = 'specific' | 'all_pints' | 'all_drinks';
 
 interface DealFormData {
   pub_id: string;
   drink_id: number | null;
   price: string;
   deal_type: DealType;
+  deal_target: DealTarget;
   deal_title: string;
   deal_description: string;
   food_item: string;
@@ -36,6 +38,7 @@ const initialFormData: DealFormData = {
   drink_id: null,
   price: '',
   deal_type: 'drink_only',
+  deal_target: 'specific',
   deal_title: '',
   deal_description: '',
   food_item: '',
@@ -72,12 +75,16 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
       return;
     }
 
+    // Only set drink_id if deal_target is 'specific' and not food_only
+    const shouldHaveDrinkId = formData.deal_type !== 'food_only' && formData.deal_target === 'specific';
+
     const dealData = {
       pub_id: formData.pub_id,
-      drink_id: formData.deal_type === 'food_only' ? null : formData.drink_id,
+      drink_id: shouldHaveDrinkId ? formData.drink_id : null,
       price: parseFloat(formData.price),
       is_deal: true,
       deal_type: formData.deal_type,
+      deal_target: formData.deal_type !== 'food_only' ? formData.deal_target : null,
       deal_title: formData.deal_title || null,
       deal_description: formData.deal_description || null,
       food_item: formData.deal_type !== 'drink_only' ? formData.food_item || null : null,
@@ -187,19 +194,36 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
 
           {/* Drink Selection */}
           {formData.deal_type !== 'food_only' && (
-            <div>
-              <label className="block text-sm text-stout-400 mb-1">Drink *</label>
-              <select
-                value={formData.drink_id || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, drink_id: parseInt(e.target.value) || null }))}
-                required
-                className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-amber-500"
-              >
-                <option value="">Select a drink</option>
-                {drinks.map((drink) => (
-                  <option key={drink.id} value={drink.id}>{drink.name}</option>
-                ))}
-              </select>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-stout-400 mb-1">Applies To</label>
+                <select
+                  value={formData.deal_target}
+                  onChange={(e) => setFormData(prev => ({ ...prev, deal_target: e.target.value as DealTarget, drink_id: null }))}
+                  className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="specific">Specific Drink</option>
+                  <option value="all_pints">All Pints</option>
+                  <option value="all_drinks">All Drinks</option>
+                </select>
+              </div>
+
+              {formData.deal_target === 'specific' && (
+                <div>
+                  <label className="block text-sm text-stout-400 mb-1">Select Drink *</label>
+                  <select
+                    value={formData.drink_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, drink_id: parseInt(e.target.value) || null }))}
+                    required
+                    className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="">Select a drink</option>
+                    {drinks.map((drink) => (
+                      <option key={drink.id} value={drink.id}>{drink.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
