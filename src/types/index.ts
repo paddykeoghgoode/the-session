@@ -125,6 +125,7 @@ export interface Review {
   staff_friendliness: number | null;
   safety: number | null;
   value_for_money: number | null;
+  avg_rating: number | null; // Auto-calculated average of all rating fields
   comment: string | null;
   is_approved: boolean;
   moderation_note: string | null;
