@@ -70,7 +70,7 @@ export interface Pub {
 export interface Drink {
   id: number;
   name: string;
-  category: 'beer' | 'cider';
+  category: 'beer' | 'cider' | 'non-alcoholic';
 }
 
 export interface Price {
@@ -226,6 +226,15 @@ export const DRINKS: Omit<Drink, 'id'>[] = [
   { name: 'Madri', category: 'beer' },         // 16 - Lager
   { name: 'Asahi', category: 'beer' },         // 17 - Lager
   { name: 'Smithwicks', category: 'beer' },    // 18 - Ale
+  // Non-alcoholic drinks (19-26)
+  { name: 'Guinness 0.0', category: 'non-alcoholic' },      // 19
+  { name: 'Heineken 0.0', category: 'non-alcoholic' },      // 20
+  { name: 'Paulaner 0%', category: 'non-alcoholic' },       // 21
+  { name: 'Erdinger Alkoholfrei', category: 'non-alcoholic' }, // 22
+  { name: 'Bulmers 0.0%', category: 'non-alcoholic' },      // 23
+  { name: 'Kopparberg 0.0', category: 'non-alcoholic' },    // 24
+  { name: 'Corona 0.0', category: 'non-alcoholic' },        // 25
+  { name: 'Peroni 0.0', category: 'non-alcoholic' },        // 26
 ];
 
 export const RATING_CATEGORIES = [

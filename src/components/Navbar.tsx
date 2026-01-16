@@ -11,6 +11,7 @@ import type { User } from '@supabase/supabase-js';
 export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const supabase = createClient();
 
@@ -18,15 +19,34 @@ export default function Navbar() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+        setIsAdmin(profile?.is_admin === true);
+      }
     };
     getUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        setIsAdmin(profile?.is_admin === true);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, [supabase, supabase.auth]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -88,6 +108,14 @@ export default function Navbar() {
 
               {user ? (
                 <>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                    >
+                      Admin
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     className="text-stout-700 hover:text-stout-900 px-3 py-2 text-sm font-medium"
@@ -169,6 +197,15 @@ export default function Navbar() {
               <hr className="border-cream-300 my-2" />
               {user ? (
                 <>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="block px-3 py-2 rounded-md text-base font-medium bg-amber-600 text-white hover:bg-amber-700"
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     onClick={() => setIsMenuOpen(false)}

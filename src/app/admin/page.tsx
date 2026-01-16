@@ -148,6 +148,12 @@ export default async function AdminPage() {
           <h2 className="text-xl font-semibold text-cream-100 mb-4">Quick Actions</h2>
           <div className="space-y-2">
             <Link
+              href="/admin/pubs"
+              className="block text-amber-500 hover:text-amber-400 font-medium"
+            >
+              + Add New Pub
+            </Link>
+            <Link
               href="/admin/photos?filter=all"
               className="block text-irish-green-500 hover:text-irish-green-400"
             >

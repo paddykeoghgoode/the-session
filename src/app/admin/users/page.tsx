@@ -15,6 +15,7 @@ interface UserProfile {
   is_verified_local: boolean;
   total_contributions: number;
   created_at: string;
+  last_login_at: string | null;
 }
 
 export default function AdminUsersPage() {
@@ -153,7 +154,8 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-cream-100">User</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-cream-100 hidden sm:table-cell">Contributions</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-cream-100 hidden md:table-cell">Joined</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-cream-100 hidden md:table-cell">Last Login</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-cream-100 hidden lg:table-cell">Joined</th>
                 <th className="px-4 py-3 text-right text-sm font-medium text-cream-100">Actions</th>
               </tr>
             </thead>
@@ -180,6 +182,9 @@ export default function AdminUsersPage() {
                     {user.total_contributions}
                   </td>
                   <td className="px-4 py-3 text-stout-400 text-sm hidden md:table-cell">
+                    {user.last_login_at ? formatDate(user.last_login_at) : 'Never'}
+                  </td>
+                  <td className="px-4 py-3 text-stout-400 text-sm hidden lg:table-cell">
                     {formatDate(user.created_at)}
                   </td>
                   <td className="px-4 py-3 text-right">

@@ -139,6 +139,15 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
         throw uploadError;
       }
 
+      // Check if user is trusted (auto-approve their uploads)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_trusted, is_admin')
+        .eq('id', userId)
+        .single();
+
+      const isAutoApproved = profile?.is_trusted || profile?.is_admin;
+
       // Create database record
       const { error: dbError } = await supabase.from('pub_photos').insert({
         pub_id: pubId,
@@ -149,6 +158,7 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
         width,
         height,
         caption: caption.trim() || null,
+        is_approved: isAutoApproved,
       });
 
       if (dbError) {

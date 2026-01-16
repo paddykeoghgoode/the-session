@@ -175,12 +175,20 @@ export default async function HomePage() {
                   className="bg-gradient-to-br from-amber-900/30 to-stout-800 rounded-lg p-4 border border-amber-700/50 hover:border-amber-600 transition-colors"
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-amber-400 font-medium">{deal.drink?.name}</span>
+                    <span className="text-amber-400 font-medium">
+                      {deal.deal_title || deal.drink?.name || deal.food_item || 'Special Deal'}
+                    </span>
                     <span className="text-2xl font-bold text-irish-green-500">
                       {formatPrice(deal.price)}
                     </span>
                   </div>
                   <p className="text-cream-100 font-semibold">{deal.pub?.name}</p>
+                  {deal.deal_type === 'food_combo' && deal.food_item && deal.drink?.name && (
+                    <p className="text-sm text-stout-300 mt-1">{deal.food_item} + {deal.drink.name}</p>
+                  )}
+                  {deal.deal_type === 'food_only' && deal.food_item && (
+                    <p className="text-sm text-stout-300 mt-1">{deal.food_item}</p>
+                  )}
                   {deal.deal_description && (
                     <p className="text-sm text-amber-300 mt-1">{deal.deal_description}</p>
                   )}

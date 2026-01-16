@@ -51,6 +51,15 @@ export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewF
         return;
       }
 
+      // Check if user is trusted (auto-approve their reviews)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_trusted, is_admin')
+        .eq('id', user.id)
+        .single();
+
+      const isAutoApproved = profile?.is_trusted || profile?.is_admin;
+
       const { error: insertError } = await supabase.from('reviews').upsert({
         pub_id: pubId,
         user_id: user.id,
@@ -61,6 +70,7 @@ export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewF
         safety: ratings.safety || null,
         value_for_money: ratings.value_for_money || null,
         comment: comment.trim() || null,
+        is_approved: isAutoApproved,
       }, {
         onConflict: 'pub_id,user_id',
       });
