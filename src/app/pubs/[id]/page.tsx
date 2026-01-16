@@ -19,6 +19,7 @@ import PubLikeButton from '@/components/PubLikeButton';
 import CreamRating from '@/components/CreamRating';
 import PriceHistoryGraph from '@/components/PriceHistoryGraph';
 import ReportButton from '@/components/ReportButton';
+import AdminDealManager from '@/components/AdminDealManager';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
@@ -176,7 +177,12 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
       </nav>
 
       {/* Admin Editor */}
-      {isAdmin && <AdminPubEditor pub={pub} />}
+      {isAdmin && (
+        <div className="space-y-4 mb-6">
+          <AdminPubEditor pub={pub} />
+          <AdminDealManager pubId={pub.id} pubName={pub.name} drinks={drinks} existingDeals={deals} />
+        </div>
+      )}
 
       {/* Moderation Status Banners */}
       {pub.moderation_status === 'temporarily_closed' && (

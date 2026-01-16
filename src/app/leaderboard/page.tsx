@@ -19,6 +19,7 @@ async function getCheapestByDrink() {
           pub:pubs(id, name, address, slug)
         `)
         .eq('drink_id', drink.id)
+        .eq('is_deal', false) // Exclude deals from pricing truth
         .order('price', { ascending: true })
         .limit(5);
 

@@ -34,6 +34,7 @@ async function getCheapestGuinness() {
       pub:pubs(id, name, address, slug)
     `)
     .eq('drink_id', 1) // Guinness
+    .eq('is_deal', false) // Exclude deals from pricing truth
     .order('price', { ascending: true })
     .limit(5);
 

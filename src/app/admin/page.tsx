@@ -17,14 +17,18 @@ async function isAdmin(userId: string) {
 async function getPendingCounts() {
   const supabase = await createServerSupabaseClient();
 
-  const [photos, reviews] = await Promise.all([
+  const [photos, reviews, reports, deals] = await Promise.all([
     supabase.from('pub_photos').select('id', { count: 'exact' }).eq('is_approved', false),
     supabase.from('reviews').select('id', { count: 'exact' }).eq('is_approved', false),
+    supabase.from('reports').select('id', { count: 'exact' }).eq('status', 'pending'),
+    supabase.from('prices').select('id', { count: 'exact' }).eq('is_deal', true),
   ]);
 
   return {
     pendingPhotos: photos.count || 0,
     pendingReviews: reviews.count || 0,
+    pendingReports: reports.count || 0,
+    totalDeals: deals.count || 0,
   };
 }
 
@@ -99,6 +103,46 @@ export default async function AdminPage() {
           <p className="text-stout-400">Manage trusted users and admins</p>
         </Link>
 
+        {/* Deals Management */}
+        <Link
+          href="/admin/deals"
+          className="bg-stout-800 rounded-lg border border-stout-700 p-6 hover:border-stout-500 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-cream-100">Deals</h2>
+            {counts.totalDeals > 0 && (
+              <span className="bg-amber-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+                {counts.totalDeals}
+              </span>
+            )}
+          </div>
+          <p className="text-stout-400">
+            {counts.totalDeals > 0
+              ? `${counts.totalDeals} active deal${counts.totalDeals === 1 ? '' : 's'}`
+              : 'No deals yet'}
+          </p>
+        </Link>
+
+        {/* Reports / Flagged Content */}
+        <Link
+          href="/admin/reports"
+          className="bg-stout-800 rounded-lg border border-stout-700 p-6 hover:border-stout-500 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-cream-100">Reports</h2>
+            {counts.pendingReports > 0 && (
+              <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+                {counts.pendingReports}
+              </span>
+            )}
+          </div>
+          <p className="text-stout-400">
+            {counts.pendingReports > 0
+              ? `${counts.pendingReports} report${counts.pendingReports === 1 ? '' : 's'} pending review`
+              : 'No pending reports'}
+          </p>
+        </Link>
+
         {/* Quick Stats */}
         <div className="bg-stout-800 rounded-lg border border-stout-700 p-6">
           <h2 className="text-xl font-semibold text-cream-100 mb-4">Quick Actions</h2>
@@ -114,6 +158,18 @@ export default async function AdminPage() {
               className="block text-irish-green-500 hover:text-irish-green-400"
             >
               View all reviews
+            </Link>
+            <Link
+              href="/admin/deals"
+              className="block text-irish-green-500 hover:text-irish-green-400"
+            >
+              Manage all deals
+            </Link>
+            <Link
+              href="/admin/reports"
+              className="block text-irish-green-500 hover:text-irish-green-400"
+            >
+              View flagged content
             </Link>
           </div>
         </div>
