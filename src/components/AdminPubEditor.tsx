@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import type { Pub, AmenityKey } from '@/types';
 
@@ -20,6 +21,7 @@ const MODERATION_STATUSES = [
 ] as const;
 
 export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [formData, setFormData] = useState({
@@ -71,7 +73,11 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
       if (onUpdate) {
         onUpdate({ ...pub, ...updateData });
       }
+
+      // Refresh the page to show updated data
+      router.refresh();
     } catch (err) {
+      console.error('Admin save error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setIsSaving(false);
@@ -99,7 +105,11 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
       if (onUpdate) {
         onUpdate({ ...pub, [amenity]: newValue });
       }
+
+      // Refresh the page to show updated data
+      router.refresh();
     } catch (err) {
+      console.error('Admin save error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setIsSaving(false);
@@ -132,7 +142,11 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
       if (onUpdate) {
         onUpdate({ ...pub, is_active: newIsActive });
       }
+
+      // Refresh the page to show updated data
+      router.refresh();
     } catch (err) {
+      console.error('Admin save error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setIsSaving(false);
@@ -158,7 +172,11 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
       if (onUpdate) {
         onUpdate({ ...pub, moderation_status: status });
       }
+
+      // Refresh the page to show updated data
+      router.refresh();
     } catch (err) {
+      console.error('Admin save error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setIsSaving(false);
