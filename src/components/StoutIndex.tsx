@@ -52,7 +52,7 @@ export default function StoutIndex() {
             .eq('is_deal', false)
             .order('created_at', { ascending: false })
             .limit(100);
-          finalCurrentData = allTimeData;
+          finalCurrentData = allTimeData || [];
         }
 
         // Last week average (7-14 days ago) - Guinness only
