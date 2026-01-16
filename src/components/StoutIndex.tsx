@@ -13,9 +13,11 @@ interface StoutIndexData {
 export default function StoutIndex() {
   const [data, setData] = useState<StoutIndexData | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const supabase = createClient();
+
     async function fetchStoutIndex() {
       try {
         // Get current week average
@@ -25,18 +27,32 @@ export default function StoutIndex() {
         const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-        // Current average (last 7 days) - Guinness only (drink_id = 1)
+        // Current average (last 30 days for more data) - Guinness only (drink_id = 1)
         const { data: currentData, error: currentError } = await supabase
           .from('prices')
           .select('price')
           .eq('drink_id', 1) // Guinness
           .eq('is_deal', false)
-          .gte('created_at', oneWeekAgo.toISOString());
+          .gte('created_at', oneMonthAgo.toISOString());
 
         if (currentError) {
           console.error('Error fetching current prices:', currentError);
+          setError('Failed to load prices');
           setLoading(false);
           return;
+        }
+
+        // If no recent data, try all-time Guinness prices
+        let finalCurrentData = currentData;
+        if (!currentData || currentData.length === 0) {
+          const { data: allTimeData } = await supabase
+            .from('prices')
+            .select('price')
+            .eq('drink_id', 1) // Guinness
+            .eq('is_deal', false)
+            .order('created_at', { ascending: false })
+            .limit(100);
+          finalCurrentData = allTimeData;
         }
 
         // Last week average (7-14 days ago) - Guinness only
@@ -63,20 +79,20 @@ export default function StoutIndex() {
         };
 
         setData({
-          currentAvg: calcAvg(currentData),
+          currentAvg: calcAvg(finalCurrentData),
           lastWeekAvg: calcAvg(lastWeekData),
           lastMonthAvg: calcAvg(lastMonthData),
-          sampleSize: currentData?.length || 0,
+          sampleSize: finalCurrentData?.length || 0,
         });
-      } catch (error) {
-        console.error('Error fetching stout index:', error);
+      } catch (err) {
+        console.error('Error fetching stout index:', err);
+        setError('Failed to load');
       } finally {
         setLoading(false);
       }
     }
 
     fetchStoutIndex();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
@@ -89,8 +105,18 @@ export default function StoutIndex() {
     );
   }
 
-  if (!data || data.currentAvg === null) {
-    return null;
+  if (error || !data || data.currentAvg === null) {
+    return (
+      <div className="bg-gradient-to-br from-stout-800 to-stout-900 rounded-xl border border-stout-700 p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-2xl">🍺</span>
+          <h3 className="text-lg font-bold text-cream-100">The Stout Index</h3>
+        </div>
+        <p className="text-sm text-stout-400">
+          {error || 'No Guinness price data available yet. Be the first to submit a price!'}
+        </p>
+      </div>
+    );
   }
 
   const changeFromLastWeek = data.lastWeekAvg
