@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
-import type { Pub, AmenityKey } from '@/types';
+import type { Pub, AmenityKeyV2 } from '@/types';
 
 interface AdminPubEditorProps {
   pub: Pub;
@@ -36,6 +36,7 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
     eircode: pub.eircode || '',
   });
   const [amenities, setAmenities] = useState({
+    // Original amenities
     has_food: pub.has_food,
     has_outdoor_seating: pub.has_outdoor_seating,
     shows_sports: pub.shows_sports,
@@ -44,6 +45,17 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
     has_darts: pub.has_darts,
     has_board_games: pub.has_board_games,
     is_speakeasy: pub.is_speakeasy,
+    // V2 amenities
+    has_beer_garden: pub.has_beer_garden,
+    is_dog_friendly: pub.is_dog_friendly,
+    is_late_bar: pub.is_late_bar,
+    is_wheelchair_accessible: pub.is_wheelchair_accessible,
+    has_traditional_music: pub.has_traditional_music,
+    has_quiz_night: pub.has_quiz_night,
+    has_snug: pub.has_snug,
+    is_craft_beer_focused: pub.is_craft_beer_focused,
+    is_cash_only: pub.is_cash_only,
+    is_card_only: pub.is_card_only,
   });
   const [isActive, setIsActive] = useState(pub.is_active);
   const [moderationStatus, setModerationStatus] = useState(pub.moderation_status);
@@ -84,7 +96,7 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
     }
   };
 
-  const handleAmenityToggle = async (amenity: AmenityKey) => {
+  const handleAmenityToggle = async (amenity: AmenityKeyV2) => {
     setIsSaving(true);
     setError(null);
 
@@ -361,19 +373,22 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
         {renderEditableField('twitter', 'Twitter')}
       </div>
 
-      {/* Amenities */}
-      <div>
-        <h4 className="text-sm font-medium text-cream-100 mb-2">Amenities</h4>
+      {/* Amenities - Features */}
+      <div className="mb-4 pb-4 border-b border-stout-700">
+        <h4 className="text-sm font-medium text-cream-100 mb-2">Features</h4>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { key: 'has_food' as AmenityKey, label: 'Serves Food', icon: '🍴' },
-            { key: 'has_live_music' as AmenityKey, label: 'Live Music', icon: '🎵' },
-            { key: 'shows_sports' as AmenityKey, label: 'Shows Sports', icon: '⚽' },
-            { key: 'has_outdoor_seating' as AmenityKey, label: 'Outdoor Seating', icon: '🌳' },
-            { key: 'has_pool' as AmenityKey, label: 'Pool Table', icon: '🎱' },
-            { key: 'has_darts' as AmenityKey, label: 'Darts', icon: '🎯' },
-            { key: 'has_board_games' as AmenityKey, label: 'Board Games', icon: '🎲' },
-            { key: 'is_speakeasy' as AmenityKey, label: 'Speakeasy', icon: '🕵️' },
+            { key: 'has_food' as AmenityKeyV2, label: 'Serves Food', icon: '🍴' },
+            { key: 'has_live_music' as AmenityKeyV2, label: 'Live Music', icon: '🎵' },
+            { key: 'has_traditional_music' as AmenityKeyV2, label: 'Trad Music', icon: '🎻' },
+            { key: 'shows_sports' as AmenityKeyV2, label: 'Shows Sports', icon: '⚽' },
+            { key: 'has_outdoor_seating' as AmenityKeyV2, label: 'Outdoor Seating', icon: '🌳' },
+            { key: 'has_beer_garden' as AmenityKeyV2, label: 'Beer Garden', icon: '🌻' },
+            { key: 'has_pool' as AmenityKeyV2, label: 'Pool Table', icon: '🎱' },
+            { key: 'has_darts' as AmenityKeyV2, label: 'Darts', icon: '🎯' },
+            { key: 'has_board_games' as AmenityKeyV2, label: 'Board Games', icon: '🎲' },
+            { key: 'has_quiz_night' as AmenityKeyV2, label: 'Quiz Night', icon: '❓' },
+            { key: 'has_snug' as AmenityKeyV2, label: 'Has Snug', icon: '🛋️' },
           ].map(({ key, label, icon }) => (
             <button
               key={key}
@@ -382,6 +397,69 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                 amenities[key]
                   ? 'bg-irish-green-600/20 border border-irish-green-600 text-irish-green-400'
+                  : 'bg-stout-700 border border-stout-600 text-stout-400'
+              }`}
+            >
+              <span>{icon}</span>
+              <span>{label}</span>
+              {amenities[key] && (
+                <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Amenities - Special */}
+      <div className="mb-4 pb-4 border-b border-stout-700">
+        <h4 className="text-sm font-medium text-cream-100 mb-2">Special</h4>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: 'is_speakeasy' as AmenityKeyV2, label: 'Speakeasy', icon: '🕵️' },
+            { key: 'is_late_bar' as AmenityKeyV2, label: 'Late Bar', icon: '🌙' },
+            { key: 'is_dog_friendly' as AmenityKeyV2, label: 'Dog Friendly', icon: '🐕' },
+            { key: 'is_wheelchair_accessible' as AmenityKeyV2, label: 'Wheelchair Access', icon: '♿' },
+            { key: 'is_craft_beer_focused' as AmenityKeyV2, label: 'Craft Beer', icon: '🍻' },
+          ].map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => handleAmenityToggle(key)}
+              disabled={isSaving}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                amenities[key]
+                  ? 'bg-irish-green-600/20 border border-irish-green-600 text-irish-green-400'
+                  : 'bg-stout-700 border border-stout-600 text-stout-400'
+              }`}
+            >
+              <span>{icon}</span>
+              <span>{label}</span>
+              {amenities[key] && (
+                <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Amenities - Payment */}
+      <div>
+        <h4 className="text-sm font-medium text-cream-100 mb-2">Payment</h4>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: 'is_cash_only' as AmenityKeyV2, label: 'Cash Only', icon: '💵' },
+            { key: 'is_card_only' as AmenityKeyV2, label: 'Card Only', icon: '💳' },
+          ].map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => handleAmenityToggle(key)}
+              disabled={isSaving}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                amenities[key]
+                  ? 'bg-amber-600/20 border border-amber-600 text-amber-400'
                   : 'bg-stout-700 border border-stout-600 text-stout-400'
               }`}
             >

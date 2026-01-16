@@ -13,6 +13,12 @@ import AdminPubEditor from '@/components/AdminPubEditor';
 import SocialLinks from '@/components/SocialLinks';
 import OpenStatus from '@/components/OpenStatus';
 import PriceFreshness from '@/components/PriceFreshness';
+import PubAmenities from '@/components/PubAmenities';
+import PubEvents from '@/components/PubEvents';
+import PubLikeButton from '@/components/PubLikeButton';
+import CreamRating from '@/components/CreamRating';
+import PriceHistoryGraph from '@/components/PriceHistoryGraph';
+import ReportButton from '@/components/ReportButton';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
@@ -254,61 +260,18 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               />
             </div>
 
-            {/* Amenities as Yes/No grid */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-stout-400">Food:</span>
-                <span className={pub.has_food ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.has_food ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Live Music:</span>
-                <span className={pub.has_live_music ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.has_live_music ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Sports:</span>
-                <span className={pub.shows_sports ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.shows_sports ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Outdoor Seating:</span>
-                <span className={pub.has_outdoor_seating ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.has_outdoor_seating ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Pool Table:</span>
-                <span className={pub.has_pool ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.has_pool ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Darts:</span>
-                <span className={pub.has_darts ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.has_darts ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Board Games:</span>
-                <span className={pub.has_board_games ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.has_board_games ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stout-400">Speakeasy:</span>
-                <span className={pub.is_speakeasy ? 'text-irish-green-500' : 'text-stout-500'}>
-                  {pub.is_speakeasy ? 'Yes' : 'No'}
-                </span>
-              </div>
-            </div>
+            {/* Amenities - V2 display */}
+            <PubAmenities pub={pub} variant="compact" />
           </div>
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
+            {/* Like Button */}
+            <PubLikeButton
+              pubId={pub.id}
+              initialLikeCount={pub.like_count || 0}
+              size="md"
+            />
             <a
               href={getGoogleMapsUrl(pub)}
               target="_blank"
@@ -335,6 +298,11 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
             <ShareButton
               title={`${pub.name} - The Session`}
               text={`Check out ${pub.name} on The Session - Dublin's pub price tracker!`}
+            />
+            <ReportButton
+              entityType="pub"
+              entityId={pub.id}
+              entityName={pub.name}
             />
           </div>
         </div>
@@ -586,6 +554,23 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
 
         {/* Sidebar - Forms */}
         <div className="space-y-6">
+          {/* Cream Index Rating */}
+          <CreamRating
+            pubId={pub.id}
+            avgCreamScore={pub.avg_cream_score}
+            creamRatingCount={pub.cream_rating_count}
+          />
+
+          {/* Guinness Price History */}
+          <PriceHistoryGraph
+            pubId={pub.id}
+            drinkId={1}
+            drinkName="Guinness"
+          />
+
+          {/* Events & Sessions */}
+          <PubEvents pubId={pub.id} />
+
           {user ? (
             <>
               {/* Add Review Form */}

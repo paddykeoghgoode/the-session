@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import PubCard from '@/components/PubCard';
+import StoutIndex from '@/components/StoutIndex';
 import { formatPrice } from '@/lib/utils';
 
 export const revalidate = 60; // Revalidate every minute
@@ -83,7 +84,7 @@ export default async function HomePage() {
             Real prices from real locals. No tourist traps, no guesswork.
             Just honest intel on where to get a good pint at a fair price.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
               href="/pubs"
               className="bg-irish-green-600 hover:bg-irish-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
@@ -96,6 +97,11 @@ export default async function HomePage() {
             >
               View Map
             </Link>
+          </div>
+
+          {/* Stout Index Widget */}
+          <div className="max-w-md mx-auto">
+            <StoutIndex />
           </div>
         </div>
       </section>

@@ -14,6 +14,12 @@ interface SearchParams {
   sports?: string;
   outdoor?: string;
   open?: string;
+  // V2 filters
+  latebar?: string;
+  dogfriendly?: string;
+  trad?: string;
+  snug?: string;
+  craftbeer?: string;
 }
 
 async function getPubs(searchParams: SearchParams): Promise<Pub[]> {
@@ -33,6 +39,22 @@ async function getPubs(searchParams: SearchParams): Promise<Pub[]> {
   }
   if (searchParams.outdoor === 'true') {
     query = query.eq('has_outdoor_seating', true);
+  }
+  // V2 filters
+  if (searchParams.latebar === 'true') {
+    query = query.eq('is_late_bar', true);
+  }
+  if (searchParams.dogfriendly === 'true') {
+    query = query.eq('is_dog_friendly', true);
+  }
+  if (searchParams.trad === 'true') {
+    query = query.eq('has_traditional_music', true);
+  }
+  if (searchParams.snug === 'true') {
+    query = query.eq('has_snug', true);
+  }
+  if (searchParams.craftbeer === 'true') {
+    query = query.eq('is_craft_beer_focused', true);
   }
 
   // Apply search
@@ -164,10 +186,15 @@ export default async function PubsPage({
 
           <span className="text-sm text-stout-400">Filter:</span>
           <FilterButton label="Open Now" param="open" value="true" currentValue={params.open} />
+          <FilterButton label="Late Bar" param="latebar" value="true" currentValue={params.latebar} />
           <FilterButton label="Food" param="food" value="true" currentValue={params.food} />
           <FilterButton label="Live Music" param="music" value="true" currentValue={params.music} />
+          <FilterButton label="Trad Music" param="trad" value="true" currentValue={params.trad} />
           <FilterButton label="Sports" param="sports" value="true" currentValue={params.sports} />
           <FilterButton label="Outdoor" param="outdoor" value="true" currentValue={params.outdoor} />
+          <FilterButton label="Dog Friendly" param="dogfriendly" value="true" currentValue={params.dogfriendly} />
+          <FilterButton label="Snug" param="snug" value="true" currentValue={params.snug} />
+          <FilterButton label="Craft Beer" param="craftbeer" value="true" currentValue={params.craftbeer} />
         </div>
       </div>
 
