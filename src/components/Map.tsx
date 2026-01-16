@@ -224,7 +224,7 @@ export default function Map({ pubs, center, zoom = 13, onPubSelect }: MapProps) 
             </p>
           )}
           <a
-            href={`/pubs/${selectedPub.id}`}
+            href={`/pubs/${selectedPub.slug || selectedPub.id}`}
             className="inline-block bg-irish-green-600 hover:bg-irish-green-700 text-white text-sm font-medium px-4 py-2 rounded transition-colors"
           >
             View Details

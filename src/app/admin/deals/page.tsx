@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createServerSupabaseClient, getUser } from '@/lib/supabase-server';
 import { formatPrice, formatDate } from '@/lib/utils';
 import DealActions from './DealActions';
+import AdminDealCreator from './AdminDealCreator';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,25 @@ async function getDeals() {
   return data || [];
 }
 
+async function getPubs() {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('pubs')
+    .select('id, name, slug')
+    .eq('is_active', true)
+    .order('name');
+  return data || [];
+}
+
+async function getDrinks() {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('drinks')
+    .select('*')
+    .order('name');
+  return data || [];
+}
+
 export default async function AdminDealsPage() {
   const user = await getUser();
 
@@ -42,7 +62,11 @@ export default async function AdminDealsPage() {
     redirect('/');
   }
 
-  const deals = await getDeals();
+  const [deals, pubs, drinks] = await Promise.all([
+    getDeals(),
+    getPubs(),
+    getDrinks(),
+  ]);
 
   const isExpired = (deal: { deal_end_date?: string | null }) => {
     if (!deal.deal_end_date) return false;
@@ -62,6 +86,11 @@ export default async function AdminDealsPage() {
           <h1 className="text-3xl font-bold text-cream-100">Manage Deals</h1>
           <p className="text-stout-400">{activeDeals.length} active, {expiredDeals.length} expired</p>
         </div>
+      </div>
+
+      {/* Create New Deal */}
+      <div className="mb-8">
+        <AdminDealCreator pubs={pubs} drinks={drinks} />
       </div>
 
       {/* Active Deals */}

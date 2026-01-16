@@ -24,29 +24,29 @@ export default function StoutIndex() {
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-      // Current average (last 7 days)
+      // Current average (last 7 days) - Guinness only (drink_id = 1)
       const { data: currentData } = await supabase
         .from('prices')
-        .select('price, drink:drinks!inner(name)')
+        .select('price')
+        .eq('drink_id', 1) // Guinness
         .eq('is_deal', false)
-        .eq('drinks.name', 'Guinness')
         .gte('created_at', oneWeekAgo.toISOString());
 
-      // Last week average (7-14 days ago)
+      // Last week average (7-14 days ago) - Guinness only
       const { data: lastWeekData } = await supabase
         .from('prices')
-        .select('price, drink:drinks!inner(name)')
+        .select('price')
+        .eq('drink_id', 1) // Guinness
         .eq('is_deal', false)
-        .eq('drinks.name', 'Guinness')
         .gte('created_at', twoWeeksAgo.toISOString())
         .lt('created_at', oneWeekAgo.toISOString());
 
-      // Last month average (30-60 days ago)
+      // Last month average (30-60 days ago) - Guinness only
       const { data: lastMonthData } = await supabase
         .from('prices')
-        .select('price, drink:drinks!inner(name)')
+        .select('price')
+        .eq('drink_id', 1) // Guinness
         .eq('is_deal', false)
-        .eq('drinks.name', 'Guinness')
         .gte('created_at', twoMonthsAgo.toISOString())
         .lt('created_at', oneMonthAgo.toISOString());
 
