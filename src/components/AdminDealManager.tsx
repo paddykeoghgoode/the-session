@@ -298,7 +298,7 @@ export default function AdminDealManager({ pubId, pubName, drinks, existingDeals
                 <select
                   value={formData.drink_id || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, drink_id: parseInt(e.target.value) || null }))}
-                  required={formData.deal_type !== 'food_only'}
+                  required
                   className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded text-cream-100 focus:outline-none focus:border-amber-500"
                 >
                   <option value="">Select a drink</option>
@@ -318,7 +318,7 @@ export default function AdminDealManager({ pubId, pubName, drinks, existingDeals
                   value={formData.food_item}
                   onChange={(e) => setFormData(prev => ({ ...prev, food_item: e.target.value }))}
                   placeholder="e.g., Toastie, Carvery"
-                  required={formData.deal_type !== 'drink_only'}
+                  required
                   className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded text-cream-100 focus:outline-none focus:border-amber-500"
                 />
               </div>
