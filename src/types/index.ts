@@ -61,6 +61,7 @@ export interface Pub {
   cheapest_guinness?: number;
   cheapest_lager?: number;
   cheapest_cider?: number;
+  cheapest_non_alcoholic?: number;
   // V2 computed fields
   like_count?: number;
   avg_cream_score?: number;

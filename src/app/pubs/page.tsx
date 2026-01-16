@@ -20,6 +20,9 @@ interface SearchParams {
   trad?: string;
   snug?: string;
   craftbeer?: string;
+  // Drink type filters
+  cider?: string;
+  alcoholfree?: string;
 }
 
 async function getPubs(searchParams: SearchParams): Promise<Pub[]> {
@@ -55,6 +58,13 @@ async function getPubs(searchParams: SearchParams): Promise<Pub[]> {
   }
   if (searchParams.craftbeer === 'true') {
     query = query.eq('is_craft_beer_focused', true);
+  }
+  // Drink type filters
+  if (searchParams.cider === 'true') {
+    query = query.not('cheapest_cider', 'is', null);
+  }
+  if (searchParams.alcoholfree === 'true') {
+    query = query.not('cheapest_non_alcoholic', 'is', null);
   }
 
   // Apply search
@@ -195,6 +205,8 @@ export default async function PubsPage({
           <FilterButton label="Dog Friendly" param="dogfriendly" value="true" currentValue={params.dogfriendly} />
           <FilterButton label="Snug" param="snug" value="true" currentValue={params.snug} />
           <FilterButton label="Craft Beer" param="craftbeer" value="true" currentValue={params.craftbeer} />
+          <FilterButton label="Cider" param="cider" value="true" currentValue={params.cider} />
+          <FilterButton label="Alcohol-Free" param="alcoholfree" value="true" currentValue={params.alcoholfree} />
         </div>
       </div>
 
