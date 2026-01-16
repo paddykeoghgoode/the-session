@@ -116,6 +116,101 @@ the-session/
 └── public/                     # Static assets
 ```
 
+## Importing Pubs from OpenStreetMap
+
+The Session supports importing pub data from OpenStreetMap (OSM) to expand the pub database.
+
+### OSM Query
+
+Use this Overpass Turbo query to extract Dublin pubs:
+
+```
+[out:json][timeout:60];
+area["name"="Dublin"]["admin_level"="7"]->.dublin;
+(
+  node["amenity"="pub"](area.dublin);
+  node["amenity"="bar"](area.dublin);
+  way["amenity"="pub"](area.dublin);
+  way["amenity"="bar"](area.dublin);
+);
+out center;
+```
+
+Run this query at [overpass-turbo.eu](https://overpass-turbo.eu/) and export as JSON.
+
+### Database Migrations
+
+Before importing, run these migrations in Supabase SQL Editor:
+
+1. `016_add_osm_import_columns.sql` - Adds OSM-specific columns to pubs table
+2. `017_osm_staging_and_upsert.sql` - Creates staging table and upsert function
+
+### Import Process
+
+1. **Export OSM data** using the Overpass query above
+2. **Transform the JSON** into rows for the staging table:
+
+```sql
+-- Example: Insert a pub from OSM data into staging
+INSERT INTO osm_pubs_staging (
+  osm_id, name, lat, lon, amenity,
+  addr_housenumber, addr_street, addr_city,
+  phone, website, opening_hours,
+  outdoor_seating, food, all_tags
+) VALUES (
+  'node/1234567890',
+  'The Local Pub',
+  53.3498,
+  -6.2603,
+  'pub',
+  '123',
+  'Main Street',
+  'Dublin',
+  '+353 1 234 5678',
+  'https://thelocalpub.ie',
+  'Mo-Fr 12:00-23:30; Sa-Su 12:00-00:30',
+  'yes',
+  'yes',
+  '{"real_ale": "yes", "cuisine": "irish"}'::jsonb
+);
+```
+
+3. **Run the upsert function** to process staged data into the main pubs table:
+
+```sql
+SELECT upsert_osm_pubs();
+```
+
+### Data Fields from OSM
+
+The import system captures these OSM tags:
+
+| OSM Tag | Database Column | Description |
+|---------|-----------------|-------------|
+| `name` | `name` | Pub name |
+| `amenity` | `amenity` | Type (pub/bar) |
+| `addr:*` | `address` | Constructed from parts |
+| `phone` | `phone` | Phone number |
+| `email` | `email` | Email address |
+| `website` | `website` | Website URL |
+| `contact:facebook` | `facebook` | Facebook URL |
+| `contact:instagram` | `instagram` | Instagram handle |
+| `contact:twitter` | `twitter` | Twitter handle |
+| `opening_hours` | `opening_hours_raw` | OSM hours format |
+| `wheelchair` | `wheelchair` | Accessibility info |
+| `outdoor_seating` | `outdoor_seating` | Yes/No |
+| `food` / `cuisine` | `serves_food` | Has food |
+| `alt_name` | `alt_name` | Alternative names |
+
+### Upsert Behavior
+
+The import uses `COALESCE` logic to:
+- **Preserve manual data**: If a field already has a value in the database, it won't be overwritten by OSM data
+- **Backfill missing data**: OSM data fills in empty fields
+- **Track source**: Imported pubs are marked with `source='osm'` and their OSM ID
+
+This means crowdsourced data from users takes priority over automated imports.
+
 ## Contributing
 
 1. Fork the repository
