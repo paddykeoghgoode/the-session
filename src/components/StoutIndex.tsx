@@ -17,55 +17,67 @@ export default function StoutIndex() {
 
   useEffect(() => {
     async function fetchStoutIndex() {
-      // Get current week average
-      const now = new Date();
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      try {
+        // Get current week average
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-      // Current average (last 7 days) - Guinness only (drink_id = 1)
-      const { data: currentData } = await supabase
-        .from('prices')
-        .select('price')
-        .eq('drink_id', 1) // Guinness
-        .eq('is_deal', false)
-        .gte('created_at', oneWeekAgo.toISOString());
+        // Current average (last 7 days) - Guinness only (drink_id = 1)
+        const { data: currentData, error: currentError } = await supabase
+          .from('prices')
+          .select('price')
+          .eq('drink_id', 1) // Guinness
+          .eq('is_deal', false)
+          .gte('created_at', oneWeekAgo.toISOString());
 
-      // Last week average (7-14 days ago) - Guinness only
-      const { data: lastWeekData } = await supabase
-        .from('prices')
-        .select('price')
-        .eq('drink_id', 1) // Guinness
-        .eq('is_deal', false)
-        .gte('created_at', twoWeeksAgo.toISOString())
-        .lt('created_at', oneWeekAgo.toISOString());
+        if (currentError) {
+          console.error('Error fetching current prices:', currentError);
+          setLoading(false);
+          return;
+        }
 
-      // Last month average (30-60 days ago) - Guinness only
-      const { data: lastMonthData } = await supabase
-        .from('prices')
-        .select('price')
-        .eq('drink_id', 1) // Guinness
-        .eq('is_deal', false)
-        .gte('created_at', twoMonthsAgo.toISOString())
-        .lt('created_at', oneMonthAgo.toISOString());
+        // Last week average (7-14 days ago) - Guinness only
+        const { data: lastWeekData } = await supabase
+          .from('prices')
+          .select('price')
+          .eq('drink_id', 1) // Guinness
+          .eq('is_deal', false)
+          .gte('created_at', twoWeeksAgo.toISOString())
+          .lt('created_at', oneWeekAgo.toISOString());
 
-      const calcAvg = (prices: { price: number }[] | null) => {
-        if (!prices || prices.length === 0) return null;
-        return prices.reduce((sum, p) => sum + p.price, 0) / prices.length;
-      };
+        // Last month average (30-60 days ago) - Guinness only
+        const { data: lastMonthData } = await supabase
+          .from('prices')
+          .select('price')
+          .eq('drink_id', 1) // Guinness
+          .eq('is_deal', false)
+          .gte('created_at', twoMonthsAgo.toISOString())
+          .lt('created_at', oneMonthAgo.toISOString());
 
-      setData({
-        currentAvg: calcAvg(currentData),
-        lastWeekAvg: calcAvg(lastWeekData),
-        lastMonthAvg: calcAvg(lastMonthData),
-        sampleSize: currentData?.length || 0,
-      });
-      setLoading(false);
+        const calcAvg = (prices: { price: number }[] | null) => {
+          if (!prices || prices.length === 0) return null;
+          return prices.reduce((sum, p) => sum + p.price, 0) / prices.length;
+        };
+
+        setData({
+          currentAvg: calcAvg(currentData),
+          lastWeekAvg: calcAvg(lastWeekData),
+          lastMonthAvg: calcAvg(lastMonthData),
+          sampleSize: currentData?.length || 0,
+        });
+      } catch (error) {
+        console.error('Error fetching stout index:', error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchStoutIndex();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (

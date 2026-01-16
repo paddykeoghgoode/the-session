@@ -78,6 +78,7 @@ export interface Price {
   id: string;
   pub_id: string;
   drink_id: number | null;
+  drink_ids: number[] | null;
   price: number;
   is_deal: boolean;
   deal_description: string | null;

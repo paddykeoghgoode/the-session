@@ -21,7 +21,7 @@ type DealTarget = 'specific' | 'all_pints' | 'all_drinks';
 
 interface DealFormData {
   pub_id: string;
-  drink_id: number | null;
+  drink_ids: number[];
   price: string;
   deal_type: DealType;
   deal_target: DealTarget;
@@ -35,7 +35,7 @@ interface DealFormData {
 
 const initialFormData: DealFormData = {
   pub_id: '',
-  drink_id: null,
+  drink_ids: [],
   price: '',
   deal_type: 'drink_only',
   deal_target: 'specific',
@@ -56,6 +56,15 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
 
+  const handleDrinkToggle = (drinkId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      drink_ids: prev.drink_ids.includes(drinkId)
+        ? prev.drink_ids.filter(id => id !== drinkId)
+        : [...prev.drink_ids, drinkId]
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -75,12 +84,22 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
       return;
     }
 
-    // Only set drink_id if deal_target is 'specific' and not food_only
-    const shouldHaveDrinkId = formData.deal_type !== 'food_only' && formData.deal_target === 'specific';
+    // Validate drink selection for specific target
+    if (formData.deal_type !== 'food_only' && formData.deal_target === 'specific' && formData.drink_ids.length === 0) {
+      setError('Please select at least one drink');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Determine drink_id and drink_ids based on selection
+    const shouldHaveDrinks = formData.deal_type !== 'food_only' && formData.deal_target === 'specific';
+    const drinkId = shouldHaveDrinks && formData.drink_ids.length === 1 ? formData.drink_ids[0] : null;
+    const drinkIds = shouldHaveDrinks && formData.drink_ids.length > 1 ? formData.drink_ids : null;
 
     const dealData = {
       pub_id: formData.pub_id,
-      drink_id: shouldHaveDrinkId ? formData.drink_id : null,
+      drink_id: drinkId,
+      drink_ids: drinkIds,
       price: parseFloat(formData.price),
       is_deal: true,
       deal_type: formData.deal_type,
@@ -114,6 +133,13 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
   };
 
   const selectedPub = pubs.find(p => p.id === formData.pub_id);
+
+  // Group drinks by category
+  const drinksByCategory = drinks.reduce((acc, drink) => {
+    if (!acc[drink.category]) acc[drink.category] = [];
+    acc[drink.category].push(drink);
+    return acc;
+  }, {} as Record<string, Drink[]>);
 
   return (
     <div className="bg-stout-800 rounded-lg border border-stout-700 p-6">
@@ -199,10 +225,10 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
                 <label className="block text-sm text-stout-400 mb-1">Applies To</label>
                 <select
                   value={formData.deal_target}
-                  onChange={(e) => setFormData(prev => ({ ...prev, deal_target: e.target.value as DealTarget, drink_id: null }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, deal_target: e.target.value as DealTarget, drink_ids: [] }))}
                   className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-amber-500"
                 >
-                  <option value="specific">Specific Drink</option>
+                  <option value="specific">Specific Drinks</option>
                   <option value="all_pints">All Pints</option>
                   <option value="all_drinks">All Drinks</option>
                 </select>
@@ -210,18 +236,37 @@ export default function AdminDealCreator({ pubs, drinks }: AdminDealCreatorProps
 
               {formData.deal_target === 'specific' && (
                 <div>
-                  <label className="block text-sm text-stout-400 mb-1">Select Drink *</label>
-                  <select
-                    value={formData.drink_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, drink_id: parseInt(e.target.value) || null }))}
-                    required
-                    className="w-full px-3 py-2 bg-stout-700 border border-stout-600 rounded-lg text-cream-100 focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="">Select a drink</option>
-                    {drinks.map((drink) => (
-                      <option key={drink.id} value={drink.id}>{drink.name}</option>
+                  <label className="block text-sm text-stout-400 mb-2">
+                    Select Drinks * <span className="text-stout-500">(click to select multiple)</span>
+                  </label>
+                  <div className="bg-stout-700 border border-stout-600 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    {Object.entries(drinksByCategory).map(([category, categoryDrinks]) => (
+                      <div key={category} className="mb-3 last:mb-0">
+                        <p className="text-xs text-stout-400 uppercase tracking-wide mb-1">{category}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {categoryDrinks.map((drink) => (
+                            <button
+                              key={drink.id}
+                              type="button"
+                              onClick={() => handleDrinkToggle(drink.id)}
+                              className={`px-2 py-1 text-sm rounded transition-colors ${
+                                formData.drink_ids.includes(drink.id)
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-stout-600 text-stout-300 hover:bg-stout-500'
+                              }`}
+                            >
+                              {drink.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                  </select>
+                  </div>
+                  {formData.drink_ids.length > 0 && (
+                    <p className="text-xs text-amber-400 mt-1">
+                      {formData.drink_ids.length} drink{formData.drink_ids.length !== 1 ? 's' : ''} selected
+                    </p>
+                  )}
                 </div>
               )}
             </div>

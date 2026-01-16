@@ -35,46 +35,53 @@ function AdminReviewsContent() {
 
   useEffect(() => {
     async function checkAdminAndFetch() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/auth/login');
-        return;
-      }
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          router.push('/auth/login');
+          return;
+        }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
 
-      if (!profile?.is_admin) {
+        if (profileError || !profile?.is_admin) {
+          router.push('/');
+          return;
+        }
+
+        setIsAdmin(true);
+
+        // Fetch reviews
+        let query = supabase
+          .from('reviews')
+          .select(`
+            *,
+            pub:pubs(name, has_food),
+            profile:profiles(id, username, display_name, is_trusted)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (filter === 'pending') {
+          query = query.eq('is_approved', false);
+        }
+
+        const { data } = await query.limit(50);
+        setReviews(data || []);
+      } catch (error) {
+        console.error('Error in admin reviews:', error);
         router.push('/');
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      setIsAdmin(true);
-
-      // Fetch reviews
-      let query = supabase
-        .from('reviews')
-        .select(`
-          *,
-          pub:pubs(name, has_food),
-          profile:profiles(id, username, display_name, is_trusted)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (filter === 'pending') {
-        query = query.eq('is_approved', false);
-      }
-
-      const { data } = await query.limit(50);
-      setReviews(data || []);
-      setLoading(false);
     }
 
     checkAdminAndFetch();
-  }, [supabase, router, filter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const handleApprove = async (reviewId: string) => {
     setActionLoading(reviewId);

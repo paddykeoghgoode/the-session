@@ -1,6 +1,19 @@
 -- Add non-alcoholic drink category
+-- Must drop the view and update constraints first
+
+-- Drop the view first (with CASCADE to handle any dependencies)
+DROP VIEW IF EXISTS pub_summaries CASCADE;
+
+-- Drop the existing check constraint on category
+ALTER TABLE drinks DROP CONSTRAINT IF EXISTS drinks_category_check;
+
+-- Now we can alter the column type if needed
 ALTER TABLE drinks
 ALTER COLUMN category TYPE varchar(20);
+
+-- Add new check constraint that includes 'non-alcoholic'
+ALTER TABLE drinks ADD CONSTRAINT drinks_category_check
+CHECK (category IN ('beer', 'cider', 'non-alcoholic'));
 
 -- Add non-alcoholic drinks
 INSERT INTO drinks (name, category) VALUES
@@ -18,9 +31,7 @@ ON CONFLICT (name) DO NOTHING;
 ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
 
--- Update pub_summaries view to include cheapest non-alcoholic
-DROP VIEW IF EXISTS pub_summaries;
-
+-- Recreate pub_summaries view with cheapest non-alcoholic
 CREATE VIEW pub_summaries AS
 SELECT
   p.id,
