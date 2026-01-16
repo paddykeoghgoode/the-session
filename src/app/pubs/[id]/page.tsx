@@ -9,8 +9,12 @@ import AmenityVoting from '@/components/AmenityVoting';
 import QuickAddPrice from '@/components/QuickAddPrice';
 import ShareButton from '@/components/ShareButton';
 import PhotoUpload from '@/components/PhotoUpload';
-import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, type DayOfWeek } from '@/lib/utils';
-import type { Pub, Price, Review, PubPhoto, Drink } from '@/types';
+import AdminPubEditor from '@/components/AdminPubEditor';
+import SocialLinks from '@/components/SocialLinks';
+import OpenStatus from '@/components/OpenStatus';
+import PriceFreshness from '@/components/PriceFreshness';
+import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
+import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
 export const revalidate = 60;
 
@@ -22,7 +26,6 @@ async function getPub(idOrSlug: string): Promise<Pub | null> {
   const isUuid = uuidRegex.test(idOrSlug);
 
   if (isUuid) {
-    // Query by ID
     const { data } = await supabase
       .from('pubs')
       .select('*')
@@ -30,7 +33,6 @@ async function getPub(idOrSlug: string): Promise<Pub | null> {
       .single();
     return data;
   } else {
-    // Query by slug
     const { data } = await supabase
       .from('pubs')
       .select('*')
@@ -88,17 +90,25 @@ async function getDrinks(): Promise<Drink[]> {
   return data || [];
 }
 
+async function getUserProfile(userId: string): Promise<Profile | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  return data;
+}
+
 export default async function PubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: idOrSlug } = await params;
 
-  // First get the pub (by ID or slug)
   const pub = await getPub(idOrSlug);
 
   if (!pub) {
     notFound();
   }
 
-  // Use the actual pub ID for related queries
   const [prices, reviews, photos, drinks, user] = await Promise.all([
     getPrices(pub.id),
     getReviews(pub.id),
@@ -106,6 +116,14 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
     getDrinks(),
     getUser(),
   ]);
+
+  // Check if user is admin
+  const userProfile = user ? await getUserProfile(user.id) : null;
+  const isAdmin = userProfile?.is_admin ?? false;
+
+  // Separate regular prices from deals
+  const regularPrices = prices.filter(p => !p.is_deal);
+  const deals = prices.filter(p => p.is_deal);
 
   // Calculate average rating (exclude food rating if pub doesn't serve food)
   const excludeFood = !pub.has_food;
@@ -122,6 +140,20 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
   );
   const overallRating = avgRatings.count > 0 ? avgRatings.total / avgRatings.count : 0;
 
+  // Get cheapest pint (excluding deals)
+  const cheapestPint = regularPrices.length > 0
+    ? regularPrices.reduce((min, p) => (!min || p.price < min.price) ? p : min, regularPrices[0])
+    : null;
+
+  // Get most recent price update
+  const mostRecentPrice = prices.length > 0
+    ? prices.reduce((latest, p) => {
+        const pDate = new Date(p.created_at);
+        const latestDate = new Date(latest.created_at);
+        return pDate > latestDate ? p : latest;
+      }, prices[0])
+    : null;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
@@ -137,8 +169,32 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
         </ol>
       </nav>
 
-      {/* Permanently Closed Banner */}
-      {pub.is_permanently_closed && (
+      {/* Admin Editor */}
+      {isAdmin && <AdminPubEditor pub={pub} />}
+
+      {/* Moderation Status Banners */}
+      {pub.moderation_status === 'temporarily_closed' && (
+        <div className="bg-amber-900/50 border border-amber-700 rounded-lg p-4 mb-4">
+          <p className="text-amber-300 font-medium text-center">
+            This pub is temporarily closed
+          </p>
+        </div>
+      )}
+      {pub.moderation_status === 'renovating' && (
+        <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-4 mb-4">
+          <p className="text-blue-300 font-medium text-center">
+            This pub is currently renovating
+          </p>
+        </div>
+      )}
+      {pub.moderation_status === 'members_only' && (
+        <div className="bg-purple-900/50 border border-purple-700 rounded-lg p-4 mb-4">
+          <p className="text-purple-300 font-medium text-center">
+            This is a members-only venue
+          </p>
+        </div>
+      )}
+      {(pub.is_permanently_closed || pub.moderation_status === 'permanently_closed') && (
         <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-4">
           <p className="text-red-300 font-medium text-center">
             This pub is permanently closed
@@ -149,8 +205,14 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
       {/* Header */}
       <div className={`bg-stout-800 rounded-lg border border-stout-700 p-6 mb-8 ${pub.is_permanently_closed ? 'opacity-80' : ''}`}>
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-cream-100 mb-2">{pub.name}</h1>
+          <div className="flex-1">
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h1 className="text-3xl font-bold text-cream-100">{pub.name}</h1>
+              {/* Open/Closed Status */}
+              {hasOpeningHours(pub) && !pub.is_permanently_closed && (
+                <OpenStatus pub={pub} />
+              )}
+            </div>
             <p className="text-stout-400 mb-2">{pub.address}</p>
 
             {/* Eircode */}
@@ -179,6 +241,18 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
             ) : (
               <p className="text-stout-500 mb-4">No ratings yet</p>
             )}
+
+            {/* Social Links & Contact - Enhanced */}
+            <div className="mb-4">
+              <SocialLinks
+                phone={pub.phone}
+                email={pub.email}
+                website={pub.website}
+                facebook={pub.facebook}
+                instagram={pub.instagram}
+                twitter={pub.twitter}
+              />
+            </div>
 
             {/* Amenities as Yes/No grid */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -234,7 +308,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
             <a
               href={getGoogleMapsUrl(pub)}
               target="_blank"
@@ -265,27 +339,6 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
 
-        {/* Contact Info */}
-        {(pub.phone || pub.website) && (
-          <div className="mt-6 pt-6 border-t border-stout-700 flex flex-wrap gap-6">
-            {pub.phone && (
-              <a href={`tel:${pub.phone}`} className="text-irish-green-500 hover:text-irish-green-400">
-                {pub.phone}
-              </a>
-            )}
-            {pub.website && (
-              <a
-                href={pub.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-irish-green-500 hover:text-irish-green-400"
-              >
-                Website
-              </a>
-            )}
-          </div>
-        )}
-
         {/* Opening Hours */}
         {hasOpeningHours(pub) && (
           <div className="mt-6 pt-6 border-t border-stout-700">
@@ -302,76 +355,126 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
-      {/* Quick Decision Summary */}
-      {prices.length > 0 && (
+      {/* Quick Decision Summary - Now with separated metrics */}
+      {regularPrices.length > 0 && (
         <div className="bg-gradient-to-r from-stout-800 to-stout-800/50 rounded-lg border border-stout-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-cream-100 mb-4">At a Glance</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Cheapest Pint */}
-            {(() => {
-              const cheapest = prices.reduce((min, p) => (!min || p.price < min.price) ? p : min, prices[0]);
-              return (
-                <div className="bg-stout-700/50 rounded-lg p-3">
-                  <p className="text-xs text-stout-400 mb-1">Cheapest Pint</p>
-                  <p className="text-xl font-bold text-irish-green-500">&euro;{cheapest.price.toFixed(2)}</p>
-                  <p className="text-xs text-stout-300">{cheapest.drink?.name}</p>
-                </div>
-              );
-            })()}
-
-            {/* Active Deals */}
-            {(() => {
-              const activeDeals = prices.filter(p => p.is_deal);
-              return (
-                <div className="bg-stout-700/50 rounded-lg p-3">
-                  <p className="text-xs text-stout-400 mb-1">Active Deals</p>
-                  <p className="text-xl font-bold text-amber-500">{activeDeals.length}</p>
-                  <p className="text-xs text-stout-300">{activeDeals.length === 1 ? 'deal available' : 'deals available'}</p>
-                </div>
-              );
-            })()}
-
-            {/* Last Updated */}
-            {(() => {
-              const mostRecent = prices.reduce((latest, p) => {
-                const pDate = new Date(p.created_at);
-                return !latest || pDate > latest ? pDate : latest;
-              }, null as Date | null);
-              const daysAgo = mostRecent ? Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-              return (
-                <div className="bg-stout-700/50 rounded-lg p-3">
-                  <p className="text-xs text-stout-400 mb-1">Last Updated</p>
-                  <p className={`text-xl font-bold ${daysAgo <= 7 ? 'text-irish-green-500' : daysAgo <= 30 ? 'text-amber-500' : 'text-red-400'}`}>
-                    {daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`}
-                  </p>
-                  <p className="text-xs text-stout-300">{daysAgo <= 7 ? 'Fresh data' : daysAgo <= 30 ? 'May need update' : 'Needs confirmation'}</p>
-                </div>
-              );
-            })()}
-
-            {/* Price Range */}
-            {(() => {
-              const minPrice = Math.min(...prices.map(p => p.price));
-              const maxPrice = Math.max(...prices.map(p => p.price));
-              return (
-                <div className="bg-stout-700/50 rounded-lg p-3">
-                  <p className="text-xs text-stout-400 mb-1">Price Range</p>
-                  <p className="text-xl font-bold text-cream-100">&euro;{minPrice.toFixed(2)} - &euro;{maxPrice.toFixed(2)}</p>
-                  <p className="text-xs text-stout-300">{prices.length} {prices.length === 1 ? 'drink' : 'drinks'} tracked</p>
-                </div>
-              );
-            })()}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-cream-100">At a Glance</h2>
+            {mostRecentPrice && (
+              <PriceFreshness lastUpdated={mostRecentPrice.created_at} />
+            )}
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Cheapest Pint - From regular prices only */}
+            {cheapestPint && (
+              <div className="bg-stout-700/50 rounded-lg p-3">
+                <p className="text-xs text-stout-400 mb-1">Cheapest Pint</p>
+                <p className="text-xl font-bold text-irish-green-500">{formatPrice(cheapestPint.price)}</p>
+                <p className="text-xs text-stout-300">{cheapestPint.drink?.name}</p>
+              </div>
+            )}
+
+            {/* Price Range - From regular prices only */}
+            {regularPrices.length > 0 && (
+              <div className="bg-stout-700/50 rounded-lg p-3">
+                <p className="text-xs text-stout-400 mb-1">Price Range</p>
+                <p className="text-xl font-bold text-cream-100">
+                  {formatPrice(Math.min(...regularPrices.map(p => p.price)))} - {formatPrice(Math.max(...regularPrices.map(p => p.price)))}
+                </p>
+                <p className="text-xs text-stout-300">{regularPrices.length} {regularPrices.length === 1 ? 'drink' : 'drinks'} tracked</p>
+              </div>
+            )}
+
+            {/* Rating */}
+            <div className="bg-stout-700/50 rounded-lg p-3">
+              <p className="text-xs text-stout-400 mb-1">Rating</p>
+              {overallRating > 0 ? (
+                <>
+                  <p className="text-xl font-bold text-cream-100">{overallRating.toFixed(1)}/5</p>
+                  <p className="text-xs text-stout-300">{reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xl font-bold text-stout-500">-</p>
+                  <p className="text-xs text-stout-400">No reviews yet</p>
+                </>
+              )}
+            </div>
+
+            {/* Photos Count */}
+            <div className="bg-stout-700/50 rounded-lg p-3">
+              <p className="text-xs text-stout-400 mb-1">Photos</p>
+              <p className="text-xl font-bold text-cream-100">{photos.length}</p>
+              <p className="text-xs text-stout-300">{photos.length === 1 ? 'photo' : 'photos'} uploaded</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Deals Section - Separate from prices */}
+      {deals.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-900/20 to-amber-900/5 rounded-lg border border-amber-700/50 p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+            </svg>
+            <h2 className="text-lg font-semibold text-amber-400">Active Deals</h2>
+            <span className="ml-auto text-sm text-amber-500">{deals.length} {deals.length === 1 ? 'deal' : 'deals'}</span>
+          </div>
+          <div className="space-y-3">
+            {deals.map((deal) => (
+              <div key={deal.id} className="bg-stout-800/50 rounded-lg p-4 border border-stout-700">
+                <div className="flex justify-between items-start">
+                  <div>
+                    {deal.deal_title && (
+                      <p className="font-semibold text-cream-100">{deal.deal_title}</p>
+                    )}
+                    <p className="text-stout-300">
+                      {deal.deal_type === 'food_combo' && deal.food_item && deal.drink ? (
+                        <>{deal.food_item} + {deal.drink.name}</>
+                      ) : deal.deal_type === 'food_only' && deal.food_item ? (
+                        deal.food_item
+                      ) : deal.drink ? (
+                        deal.drink.name
+                      ) : (
+                        deal.deal_description || 'Special Deal'
+                      )}
+                    </p>
+                    {deal.deal_description && deal.deal_title && (
+                      <p className="text-sm text-stout-400 mt-1">{deal.deal_description}</p>
+                    )}
+                    {deal.deal_schedule && (
+                      <p className="text-xs text-amber-400 mt-1">{deal.deal_schedule}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-amber-500">{formatPrice(deal.price)}</p>
+                    <PriceFreshness lastUpdated={deal.created_at} showLabel={false} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-stout-500 mt-3">
+            Deals are time-limited promotions and don&apos;t affect regular pint prices
+          </p>
         </div>
       )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Prices Section */}
+          {/* Prices Section - Regular prices only */}
           <section>
-            <h2 className="text-xl font-bold text-cream-100 mb-4">Pint Prices</h2>
-            <PriceTable prices={prices} userId={user?.id} pubId={pub.id} drinks={drinks} />
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-cream-100">Pint Prices</h2>
+              {mostRecentPrice && regularPrices.length > 0 && (
+                <span className="text-xs text-stout-400">
+                  {regularPrices.length} {regularPrices.length === 1 ? 'drink' : 'drinks'} tracked
+                </span>
+              )}
+            </div>
+            <PriceTable prices={regularPrices} userId={user?.id} pubId={pub.id} drinks={drinks} />
           </section>
 
           {/* Photos Section */}

@@ -9,6 +9,10 @@ export interface Pub {
   google_place_id: string | null;
   phone: string | null;
   website: string | null;
+  email: string | null;
+  facebook: string | null;
+  instagram: string | null;
+  twitter: string | null;
   has_food: boolean;
   has_outdoor_seating: boolean;
   shows_sports: boolean;
@@ -18,6 +22,8 @@ export interface Pub {
   has_board_games: boolean;
   is_speakeasy: boolean;
   is_permanently_closed: boolean;
+  is_active: boolean;
+  moderation_status: 'active' | 'temporarily_closed' | 'renovating' | 'members_only' | 'permanently_closed';
   // Opening hours (per day)
   hours_monday_open: string | null;
   hours_monday_close: string | null;

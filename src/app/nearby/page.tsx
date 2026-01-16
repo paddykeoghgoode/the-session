@@ -330,7 +330,7 @@ export default function NearbyPage() {
               {pubs.map((pub) => (
                 <Link
                   key={pub.id}
-                  href={`/pubs/${pub.id}`}
+                  href={`/pubs/${pub.slug}`}
                   className="block bg-stout-800 rounded-lg p-4 border border-stout-700 hover:border-stout-500 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
