@@ -14,56 +14,80 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Memoize supabase client to prevent recreation on each render
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const fetchUserAndAdmin = async (authUser: typeof user) => {
-      if (authUser) {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', authUser.id)
-          .single();
+    let isMounted = true;
 
-        if (error) {
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(profile?.is_admin === true);
-        }
-      } else {
-        setIsAdmin(false);
+    const fetchAdminStatus = async (userId: string) => {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .single();
+
+      if (!isMounted) return false;
+
+      if (error) {
+        console.error('[Navbar] Profile fetch error:', error.message);
+        return false;
       }
+      return profile?.is_admin === true;
     };
 
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const handleAuthChange = async (event: string, session: { user: User } | null) => {
+      console.log('[Navbar] Auth event:', event, 'Has session:', !!session);
+
+      if (!isMounted) return;
 
       if (session?.user) {
-        const { data: { user: verifiedUser }, error: userError } = await supabase.auth.getUser();
+        // We have a session, set the user
+        setUser(session.user);
 
-        if (userError) {
-          setUser(null);
-          setIsAdmin(false);
-        } else {
-          setUser(verifiedUser);
-          await fetchUserAndAdmin(verifiedUser);
+        // Fetch admin status
+        const adminStatus = await fetchAdminStatus(session.user.id);
+        if (isMounted) {
+          setIsAdmin(adminStatus);
+          setAuthLoading(false);
         }
       } else {
         setUser(null);
         setIsAdmin(false);
+        setAuthLoading(false);
       }
     };
 
-    initAuth();
+    // Set up auth state listener - this fires immediately with current session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      await fetchUserAndAdmin(session?.user ?? null);
-    });
+    // Also do an explicit check in case onAuthStateChange doesn't fire
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('[Navbar] getSession result:', { hasSession: !!session, error: error?.message });
 
-    return () => subscription.unsubscribe();
+      if (!isMounted) return;
+
+      if (session?.user) {
+        setUser(session.user);
+        const adminStatus = await fetchAdminStatus(session.user.id);
+        if (isMounted) {
+          setIsAdmin(adminStatus);
+        }
+      }
+      setAuthLoading(false);
+    };
+
+    // Small delay to let onAuthStateChange fire first
+    const timeoutId = setTimeout(checkSession, 100);
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, [supabase]);
 
   const handleSignOut = async () => {
@@ -146,7 +170,9 @@ export default function Navbar() {
                 <SearchBar />
               </div>
 
-              {user ? (
+              {authLoading ? (
+                <div className="w-20 h-8 bg-cream-200 rounded animate-pulse"></div>
+              ) : user ? (
                 <>
                   {isAdmin && (
                     <Link
@@ -235,7 +261,11 @@ export default function Navbar() {
                 </Link>
               ))}
               <hr className="border-cream-300 my-2" />
-              {user ? (
+              {authLoading ? (
+                <div className="px-3 py-2">
+                  <div className="w-24 h-6 bg-cream-200 rounded animate-pulse"></div>
+                </div>
+              ) : user ? (
                 <>
                   {isAdmin && (
                     <Link
