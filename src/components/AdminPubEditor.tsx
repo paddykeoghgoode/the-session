@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import type { Pub, AmenityKeyV2 } from '@/types';
@@ -63,20 +63,33 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const handleFieldSave = async (field: EditableField) => {
     setIsSaving(true);
     setError(null);
 
     try {
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to edit. Please refresh and try again.');
+      }
+
       const updateData = { [field]: formData[field] || null };
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('pubs')
         .update(updateData)
-        .eq('id', pub.id);
+        .eq('id', pub.id)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
+
+      // RLS silently fails - check if update actually happened
+      if (!data) {
+        throw new Error('Update failed - you may not have admin permissions. Try logging out and back in.');
+      }
 
       setEditingField(null);
       setSaveSuccess(true);
@@ -103,12 +116,22 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
     const newValue = !amenities[amenity];
 
     try {
-      const { error: updateError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to edit. Please refresh and try again.');
+      }
+
+      const { data, error: updateError } = await supabase
         .from('pubs')
         .update({ [amenity]: newValue })
-        .eq('id', pub.id);
+        .eq('id', pub.id)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
+      if (!data) {
+        throw new Error('Update failed - you may not have admin permissions. Try logging out and back in.');
+      }
 
       setAmenities(prev => ({ ...prev, [amenity]: newValue }));
       setSaveSuccess(true);
@@ -135,17 +158,27 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
     const newIsActive = !isActive;
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to edit. Please refresh and try again.');
+      }
+
       const updateData = {
         is_active: newIsActive,
         deactivated_at: newIsActive ? null : new Date().toISOString(),
       };
 
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('pubs')
         .update(updateData)
-        .eq('id', pub.id);
+        .eq('id', pub.id)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
+      if (!data) {
+        throw new Error('Update failed - you may not have admin permissions. Try logging out and back in.');
+      }
 
       setIsActive(newIsActive);
       setSaveSuccess(true);
@@ -170,12 +203,22 @@ export default function AdminPubEditor({ pub, onUpdate }: AdminPubEditorProps) {
     setError(null);
 
     try {
-      const { error: updateError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to edit. Please refresh and try again.');
+      }
+
+      const { data, error: updateError } = await supabase
         .from('pubs')
         .update({ moderation_status: status })
-        .eq('id', pub.id);
+        .eq('id', pub.id)
+        .select()
+        .single();
 
       if (updateError) throw updateError;
+      if (!data) {
+        throw new Error('Update failed - you may not have admin permissions. Try logging out and back in.');
+      }
 
       setModerationStatus(status);
       setSaveSuccess(true);
