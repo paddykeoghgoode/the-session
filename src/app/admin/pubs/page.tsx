@@ -47,6 +47,7 @@ function generateSlug(name: string): string {
 
 export default function AdminPubsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [formData, setFormData] = useState<PubFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,24 +57,33 @@ export default function AdminPubsPage() {
 
   useEffect(() => {
     async function checkAdmin() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/auth/login');
-        return;
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) {
+          router.push('/auth/login');
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) throw profileError;
+        if (!profile?.is_admin) {
+          router.push('/');
+          return;
+        }
+
+        setIsAdmin(true);
+      } catch (err) {
+        console.error('Admin permission check failed:', err);
+        setError(err instanceof Error ? err.message : 'Failed to verify admin permissions.');
+      } finally {
+        setIsCheckingPermissions(false);
       }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.is_admin) {
-        router.push('/');
-        return;
-      }
-
-      setIsAdmin(true);
     }
 
     checkAdmin();
@@ -112,29 +122,45 @@ export default function AdminPubsPage() {
       moderation_status: 'active',
     };
 
-    const { data, error: insertError } = await supabase
-      .from('pubs')
-      .insert(pubData)
-      .select()
-      .single();
+    try {
+      const { data, error: insertError } = await supabase
+        .from('pubs')
+        .insert(pubData)
+        .select('id, slug')
+        .single();
 
-    if (insertError) {
-      setError(insertError.message);
-    } else {
+      if (insertError) {
+        throw insertError;
+      }
+
+      if (!data?.slug) {
+        throw new Error('Pub created, but no slug was returned.');
+      }
+
       setSuccess(`Pub "${formData.name}" created successfully!`);
       setFormData(initialFormData);
       setTimeout(() => {
         router.push(`/pubs/${data.slug}`);
       }, 1500);
+    } catch (err) {
+      console.error('Admin pub creation failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create pub.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   if (!isAdmin) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-stout-400">Checking permissions...</p>
+        <p className="text-stout-400">
+          {isCheckingPermissions ? 'Checking permissions...' : 'You do not have access to this page.'}
+        </p>
+        {error && (
+          <p className="mt-2 text-sm text-red-400">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
