@@ -23,11 +23,14 @@ export default function Navbar() {
     let isMounted = true;
 
     const fetchAdminStatus = async (userId: string) => {
+      console.log('[Navbar] Fetching admin status for user:', userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', userId)
         .single();
+
+      console.log('[Navbar] Profile fetch result:', { profile, error: error?.message, code: error?.code });
 
       if (!isMounted) return false;
 
@@ -35,25 +38,31 @@ export default function Navbar() {
         console.error('[Navbar] Profile fetch error:', error.message);
         return false;
       }
-      return profile?.is_admin === true;
+      const isAdminResult = profile?.is_admin === true;
+      console.log('[Navbar] isAdmin result:', isAdminResult);
+      return isAdminResult;
     };
 
     const handleAuthChange = async (event: string, session: { user: User } | null) => {
-      console.log('[Navbar] Auth event:', event, 'Has session:', !!session);
+      console.log('[Navbar] Auth event:', event, 'Has session:', !!session, 'User ID:', session?.user?.id);
 
       if (!isMounted) return;
 
       if (session?.user) {
         // We have a session, set the user
+        console.log('[Navbar] Setting user from session');
         setUser(session.user);
 
         // Fetch admin status
         const adminStatus = await fetchAdminStatus(session.user.id);
+        console.log('[Navbar] Setting isAdmin to:', adminStatus, 'isMounted:', isMounted);
         if (isMounted) {
           setIsAdmin(adminStatus);
           setAuthLoading(false);
+          console.log('[Navbar] Auth loading complete, user set, isAdmin:', adminStatus);
         }
       } else {
+        console.log('[Navbar] No session, clearing user');
         setUser(null);
         setIsAdmin(false);
         setAuthLoading(false);
@@ -65,15 +74,21 @@ export default function Navbar() {
 
     // Also do an explicit check in case onAuthStateChange doesn't fire
     const checkSession = async () => {
+      console.log('[Navbar] checkSession running (fallback)');
       const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('[Navbar] getSession result:', { hasSession: !!session, error: error?.message });
+      console.log('[Navbar] getSession result:', { hasSession: !!session, userId: session?.user?.id, error: error?.message });
 
-      if (!isMounted) return;
+      if (!isMounted) {
+        console.log('[Navbar] checkSession: component unmounted, aborting');
+        return;
+      }
 
       if (session?.user) {
+        console.log('[Navbar] checkSession: setting user from session');
         setUser(session.user);
         const adminStatus = await fetchAdminStatus(session.user.id);
         if (isMounted) {
+          console.log('[Navbar] checkSession: setting isAdmin to:', adminStatus);
           setIsAdmin(adminStatus);
         }
       }
