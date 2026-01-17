@@ -20,32 +20,20 @@ export default function StoutIndex() {
 
     async function fetchStoutIndex() {
       try {
-        console.log('Fetching stout index...');
-        console.log('Creating query...');
-
-        const query = supabase
+        const { data: indexData, error: fetchError } = await supabase
           .from('current_stout_index')
           .select('*')
           .single();
 
-        console.log('Query created, awaiting result...');
-
-        const { data: indexData, error: fetchError } = await query;
-
-        console.log('Stout index result:', { indexData, error: fetchError?.message });
-
         if (fetchError) {
-          console.error('Error fetching stout index:', fetchError);
           setError('Failed to load');
           return;
         }
 
         setData(indexData);
-      } catch (err) {
-        console.error('Exception in fetchStoutIndex:', err);
+      } catch {
         setError('Failed to load');
       } finally {
-        console.log('Stout index fetch complete');
         setLoading(false);
       }
     }

@@ -1,6 +1,12 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
+
+let client: SupabaseClient | null = null;
 
 export function createClient() {
+  if (client) {
+    return client;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -9,12 +15,14 @@ export function createClient() {
   }
 
   // Use standard Supabase client instead of SSR version
-  // This avoids potential issues with the SSR singleton
-  return createSupabaseClient(url!, key!, {
+  // The @supabase/ssr createBrowserClient was causing queries to hang after Google OAuth
+  client = createSupabaseClient(url!, key!, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
   });
+
+  return client;
 }

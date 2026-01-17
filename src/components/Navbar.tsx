@@ -21,49 +21,29 @@ export default function Navbar() {
   useEffect(() => {
     const fetchUserAndAdmin = async (authUser: typeof user) => {
       if (authUser) {
-        console.log('Fetching admin status for user:', authUser.id, authUser.email);
-        try {
-          const query = supabase
-            .from('profiles')
-            .select('is_admin, username')
-            .eq('id', authUser.id)
-            .single();
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', authUser.id)
+          .single();
 
-          console.log('Query created, executing...');
-          const { data: profile, error } = await query;
-          console.log('Profile result:', { profile, error: error?.message });
-
-          if (error) {
-            console.error('Error fetching admin status:', error.message);
-            setIsAdmin(false);
-          } else {
-            console.log('Setting isAdmin to:', profile?.is_admin === true);
-            setIsAdmin(profile?.is_admin === true);
-          }
-        } catch (err) {
-          console.error('Exception in fetchUserAndAdmin:', err);
+        if (error) {
           setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.is_admin === true);
         }
       } else {
-        console.log('No auth user, setting isAdmin to false');
         setIsAdmin(false);
       }
     };
 
     const initAuth = async () => {
-      // Get current session - this reads from cookies
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (sessionError) {
-        console.error('Session error:', sessionError.message);
-      }
-
-      // If we have a session, verify it's valid by getting the user
       if (session?.user) {
         const { data: { user: verifiedUser }, error: userError } = await supabase.auth.getUser();
 
         if (userError) {
-          console.error('User verification error:', userError.message);
           setUser(null);
           setIsAdmin(false);
         } else {
@@ -78,8 +58,7 @@ export default function Navbar() {
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       await fetchUserAndAdmin(session?.user ?? null);
     });
