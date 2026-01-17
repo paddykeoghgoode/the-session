@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import SearchBar from './SearchBar';
 import type { User } from '@supabase/supabase-js';
@@ -16,129 +16,88 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Memoize supabase client to prevent recreation on each render
-  const supabase = useMemo(() => createClient(), []);
+  // Get singleton supabase client
+  const supabase = createClient();
 
   useEffect(() => {
     let isMounted = true;
-    let authHandled = false;
-    let fallbackTimeoutId: NodeJS.Timeout | null = null;
 
     const fetchAdminStatus = async (userId: string) => {
-      console.log('[Navbar] Fetching admin status for user:', userId);
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', userId)
-        .single();
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', userId)
+          .single();
 
-      console.log('[Navbar] Profile fetch result:', { profile, error: error?.message, code: error?.code });
-
-      if (!isMounted) return false;
-
-      if (error) {
-        console.error('[Navbar] Profile fetch error:', error.message);
+        if (error) {
+          console.error('[Navbar] Profile fetch error:', error.message);
+          return false;
+        }
+        return profile?.is_admin === true;
+      } catch (err) {
+        console.error('[Navbar] Profile fetch exception:', err);
         return false;
       }
-      const isAdminResult = profile?.is_admin === true;
-      console.log('[Navbar] isAdmin result:', isAdminResult);
-      return isAdminResult;
     };
 
-    const handleAuthChange = async (event: string, session: { user: User } | null) => {
-      console.log('[Navbar] Auth event:', event, 'Has session:', !!session, 'User ID:', session?.user?.id);
+    const initializeAuth = async () => {
+      try {
+        // Get current session from localStorage
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-      if (!isMounted) return;
+        console.log('[Navbar] Initial session check:', {
+          hasSession: !!session,
+          userId: session?.user?.id,
+          error: error?.message
+        });
 
-      // Cancel fallback if we have a session
-      if (session?.user && fallbackTimeoutId) {
-        console.log('[Navbar] Canceling fallback timeout - got session from auth event');
-        clearTimeout(fallbackTimeoutId);
-        fallbackTimeoutId = null;
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          const adminStatus = await fetchAdminStatus(session.user.id);
+          if (isMounted) {
+            setIsAdmin(adminStatus);
+            console.log('[Navbar] Auth initialized, isAdmin:', adminStatus);
+          }
+        }
+      } catch (err) {
+        console.error('[Navbar] Auth init error:', err);
+      } finally {
+        if (isMounted) {
+          setAuthLoading(false);
+        }
       }
+    };
 
-      if (session?.user) {
-        authHandled = true;
-        // We have a session, set the user
-        console.log('[Navbar] Setting user from session');
-        setUser(session.user);
+    // Initialize auth state
+    initializeAuth();
 
-        // Validate/refresh the session before making database queries
-        // This ensures the access token is valid
-        console.log('[Navbar] Validating session with getUser()');
-        const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('[Navbar] Auth state change:', event);
 
-        if (userError) {
-          console.error('[Navbar] getUser() failed:', userError.message);
-          // Session is invalid, clear everything
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          const adminStatus = await fetchAdminStatus(session.user.id);
+          if (isMounted) {
+            setIsAdmin(adminStatus);
+          }
+        } else {
           setUser(null);
           setIsAdmin(false);
-          setAuthLoading(false);
-          return;
         }
-
-        console.log('[Navbar] Session validated, user:', validatedUser?.id);
-
-        // Fetch admin status
-        const adminStatus = await fetchAdminStatus(session.user.id);
-        console.log('[Navbar] Setting isAdmin to:', adminStatus, 'isMounted:', isMounted);
-        if (isMounted) {
-          setIsAdmin(adminStatus);
-          setAuthLoading(false);
-          console.log('[Navbar] Auth loading complete, user set, isAdmin:', adminStatus);
-        }
-      } else {
-        // Only clear user if this is INITIAL_SESSION or SIGNED_OUT, not if auth was already handled
-        if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT' || !authHandled) {
-          console.log('[Navbar] No session, clearing user');
-          setUser(null);
-          setIsAdmin(false);
-          setAuthLoading(false);
-        }
+        setAuthLoading(false);
       }
-    };
-
-    // Set up auth state listener - this fires immediately with current session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
-
-    // Fallback check only if onAuthStateChange doesn't provide a session quickly
-    const checkSession = async () => {
-      if (authHandled) {
-        console.log('[Navbar] checkSession: auth already handled, skipping');
-        return;
-      }
-
-      console.log('[Navbar] checkSession running (fallback)');
-      const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('[Navbar] getSession result:', { hasSession: !!session, userId: session?.user?.id, error: error?.message });
-
-      if (!isMounted || authHandled) {
-        console.log('[Navbar] checkSession: component unmounted or auth handled, aborting');
-        return;
-      }
-
-      if (session?.user) {
-        authHandled = true;
-        console.log('[Navbar] checkSession: setting user from session');
-        setUser(session.user);
-        const adminStatus = await fetchAdminStatus(session.user.id);
-        if (isMounted) {
-          console.log('[Navbar] checkSession: setting isAdmin to:', adminStatus);
-          setIsAdmin(adminStatus);
-        }
-      }
-      setAuthLoading(false);
-    };
-
-    // Small delay to let onAuthStateChange fire first
-    fallbackTimeoutId = setTimeout(checkSession, 150);
+    );
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
-      if (fallbackTimeoutId) {
-        clearTimeout(fallbackTimeoutId);
-      }
     };
   }, [supabase]);
 

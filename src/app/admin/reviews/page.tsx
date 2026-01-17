@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
@@ -32,8 +32,7 @@ function AdminReviewsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filter = searchParams.get('filter') || 'pending';
-  // Memoize supabase client to prevent recreation on each render
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   useEffect(() => {
     async function checkAdminAndFetch() {
