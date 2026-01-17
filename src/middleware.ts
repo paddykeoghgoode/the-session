@@ -54,8 +54,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session if expired
-  await supabase.auth.getSession();
+  // Refresh session if expired - use getUser() for server-side validation
+  await supabase.auth.getUser();
 
   return response;
 }
