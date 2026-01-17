@@ -21,6 +21,8 @@ export default function Navbar() {
 
   useEffect(() => {
     let isMounted = true;
+    let authHandled = false;
+    let fallbackTimeoutId: NodeJS.Timeout | null = null;
 
     const fetchAdminStatus = async (userId: string) => {
       console.log('[Navbar] Fetching admin status for user:', userId);
@@ -48,7 +50,15 @@ export default function Navbar() {
 
       if (!isMounted) return;
 
+      // Cancel fallback if we have a session
+      if (session?.user && fallbackTimeoutId) {
+        console.log('[Navbar] Canceling fallback timeout - got session from auth event');
+        clearTimeout(fallbackTimeoutId);
+        fallbackTimeoutId = null;
+      }
+
       if (session?.user) {
+        authHandled = true;
         // We have a session, set the user
         console.log('[Navbar] Setting user from session');
         setUser(session.user);
@@ -62,28 +72,37 @@ export default function Navbar() {
           console.log('[Navbar] Auth loading complete, user set, isAdmin:', adminStatus);
         }
       } else {
-        console.log('[Navbar] No session, clearing user');
-        setUser(null);
-        setIsAdmin(false);
-        setAuthLoading(false);
+        // Only clear user if this is INITIAL_SESSION or SIGNED_OUT, not if auth was already handled
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT' || !authHandled) {
+          console.log('[Navbar] No session, clearing user');
+          setUser(null);
+          setIsAdmin(false);
+          setAuthLoading(false);
+        }
       }
     };
 
     // Set up auth state listener - this fires immediately with current session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Also do an explicit check in case onAuthStateChange doesn't fire
+    // Fallback check only if onAuthStateChange doesn't provide a session quickly
     const checkSession = async () => {
+      if (authHandled) {
+        console.log('[Navbar] checkSession: auth already handled, skipping');
+        return;
+      }
+
       console.log('[Navbar] checkSession running (fallback)');
       const { data: { session }, error } = await supabase.auth.getSession();
       console.log('[Navbar] getSession result:', { hasSession: !!session, userId: session?.user?.id, error: error?.message });
 
-      if (!isMounted) {
-        console.log('[Navbar] checkSession: component unmounted, aborting');
+      if (!isMounted || authHandled) {
+        console.log('[Navbar] checkSession: component unmounted or auth handled, aborting');
         return;
       }
 
       if (session?.user) {
+        authHandled = true;
         console.log('[Navbar] checkSession: setting user from session');
         setUser(session.user);
         const adminStatus = await fetchAdminStatus(session.user.id);
@@ -96,12 +115,14 @@ export default function Navbar() {
     };
 
     // Small delay to let onAuthStateChange fire first
-    const timeoutId = setTimeout(checkSession, 100);
+    fallbackTimeoutId = setTimeout(checkSession, 150);
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
-      clearTimeout(timeoutId);
+      if (fallbackTimeoutId) {
+        clearTimeout(fallbackTimeoutId);
+      }
     };
   }, [supabase]);
 
