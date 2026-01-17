@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase';
 import SearchBar from './SearchBar';
 import type { User } from '@supabase/supabase-js';
@@ -14,7 +14,9 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const supabase = createClient();
+
+  // Memoize supabase client to prevent recreation on each render
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -28,6 +30,8 @@ export default function Navbar() {
           .eq('id', user.id)
           .single();
         setIsAdmin(profile?.is_admin === true);
+      } else {
+        setIsAdmin(false);
       }
     };
     getUser();
@@ -47,15 +51,31 @@ export default function Navbar() {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, supabase.auth]);
+  }, [supabase]);
 
   const handleSignOut = async () => {
     // Clear client state immediately for responsive UI
     setUser(null);
     setIsAdmin(false);
-    // Sign out on client
-    await supabase.auth.signOut({ scope: 'global' });
-    // Navigate to server-side signout to clear cookies properly
+
+    try {
+      // Sign out on client - this clears localStorage tokens
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (e) {
+      // Continue even if client signout fails
+      console.error('Client signout error:', e);
+    }
+
+    // Clear any remaining Supabase localStorage items manually
+    if (typeof window !== 'undefined') {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+
+    // Navigate to server-side signout to clear cookies, then home
     window.location.href = '/auth/signout';
   };
 

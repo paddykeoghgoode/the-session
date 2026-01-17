@@ -25,10 +25,29 @@ export async function POST(request: Request) {
 
   await supabase.auth.signOut({ scope: 'global' });
 
+  // Clear all Supabase auth cookies explicitly
+  const allCookies = cookieStore.getAll();
+  for (const cookie of allCookies) {
+    if (cookie.name.startsWith('sb-')) {
+      cookieStore.set({
+        name: cookie.name,
+        value: '',
+        maxAge: 0,
+        path: '/',
+      });
+    }
+  }
+
   const requestUrl = new URL(request.url);
-  return NextResponse.redirect(new URL('/', requestUrl.origin), {
+  const response = NextResponse.redirect(new URL('/', requestUrl.origin), {
     status: 302,
   });
+
+  // Set cache control headers to prevent caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+
+  return response;
 }
 
 export async function GET(request: Request) {
