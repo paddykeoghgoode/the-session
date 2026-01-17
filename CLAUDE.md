@@ -62,7 +62,15 @@ Core tables:
 Key views:
 - `pub_summaries` - Aggregated pub data with ratings and prices
 
-Migrations are in `supabase/migrations/` and should be run in order via Supabase SQL Editor.
+V2 tables:
+- `cream_ratings` - Guinness quality ratings (creaminess, temperature, stick)
+- `price_verifications` - User confirmations of price accuracy
+- `reports` - User reports for moderation
+- `pub_events` - Recurring/one-time events (trad sessions, quiz nights)
+- `pub_menus` - Uploaded menu files
+- `pub_likes` - User pub favorites
+
+Migrations are in `supabase/migrations/` (24+ files) and should be run in order via Supabase SQL Editor.
 
 ### Type System
 
@@ -74,9 +82,11 @@ All TypeScript types are centralized in `src/types/index.ts`, including:
 ### Page Structure
 
 Uses Next.js App Router:
-- Pages use Server Components by default with `revalidate` for ISR
-- Dynamic routes use slug or UUID lookup (e.g., `/pubs/[id]`)
-- Most data fetching happens in page components via `createServerSupabaseClient()`
+- Pages use Server Components by default with `revalidate = 60` for ISR (60-second cache)
+- Admin pages use `dynamic = 'force-dynamic'` to bypass caching
+- Dynamic routes support both UUID and slug lookup (e.g., `/pubs/[id]` accepts `abc-pub-name` or UUID)
+- Data fetching happens in page components via `createServerSupabaseClient()`
+- Auth redirects use `redirect()` from `next/navigation`
 
 ### Component Patterns
 
@@ -88,11 +98,14 @@ Uses Next.js App Router:
 ### Utility Functions
 
 `src/lib/utils.ts` contains:
-- `cn()` - Tailwind class merging
+- `cn()` - Tailwind class merging via clsx
 - `formatPrice()` - EUR currency formatting
-- `isOpenNow()` - Dublin timezone opening hours check
+- `formatRelativeTime()` - Human-readable time ago strings
+- `isOpenNow()` - Dublin timezone opening hours check (handles after-midnight closures)
 - `getDistanceKm()` - Haversine distance calculation
-- `calculateAverageRating()` - Review rating aggregation
+- `calculateAverageRating()` - Review rating aggregation (can exclude food rating)
+- `slugify()` - URL-safe slug generation
+- `getGoogleMapsUrl()` / `getGoogleMapsDirectionsUrl()` - Map link generation
 
 ## Environment Variables
 

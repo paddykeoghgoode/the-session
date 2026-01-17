@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import SearchBar from './SearchBar';
@@ -10,6 +10,7 @@ import type { User } from '@supabase/supabase-js';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,8 +50,13 @@ export default function Navbar() {
   }, [supabase, supabase.auth]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // Clear client state immediately for responsive UI
     setUser(null);
+    setIsAdmin(false);
+    // Sign out on client
+    await supabase.auth.signOut({ scope: 'global' });
+    // Navigate to server-side signout to clear cookies properly
+    window.location.href = '/auth/signout';
   };
 
   const navLinks = [
