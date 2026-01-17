@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -10,31 +10,38 @@ export async function POST(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Handle errors
+          }
         },
       },
     }
   );
 
-  await supabase.auth.signOut({ scope: 'global' });
+  await supabase.auth.signOut();
 
   // Clear all Supabase auth cookies explicitly
   const allCookies = cookieStore.getAll();
   for (const cookie of allCookies) {
     if (cookie.name.startsWith('sb-')) {
-      cookieStore.set({
-        name: cookie.name,
-        value: '',
-        maxAge: 0,
-        path: '/',
-      });
+      try {
+        cookieStore.set({
+          name: cookie.name,
+          value: '',
+          maxAge: 0,
+          path: '/',
+        });
+      } catch {
+        // Ignore errors
+      }
     }
   }
 

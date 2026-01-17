@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -20,22 +20,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/', requestUrl.origin));
   }
 
-  // Track cookies to set on response
-  const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = [];
+  let response = NextResponse.redirect(new URL('/', requestUrl.origin));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          cookiesToSet.push({ name, value, options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookiesToSet.push({ name, value: '', options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.redirect(new URL('/', requestUrl.origin));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
     }
@@ -75,15 +75,14 @@ export async function GET(request: NextRequest) {
     redirectPath = '/profile/setup';
   }
 
-  // Create response with correct redirect
-  const response = NextResponse.redirect(new URL(redirectPath, requestUrl.origin));
-
-  // Apply all cookies to the response
-  for (const { name, value, options } of cookiesToSet) {
-    response.cookies.set({
-      name,
-      value,
-      ...options,
+  // Update response with correct redirect path
+  if (redirectPath !== '/') {
+    response = NextResponse.redirect(new URL(redirectPath, requestUrl.origin));
+    // Re-apply cookies to new response
+    request.cookies.getAll().forEach(cookie => {
+      if (cookie.name.startsWith('sb-')) {
+        response.cookies.set(cookie.name, cookie.value);
+      }
     });
   }
 
