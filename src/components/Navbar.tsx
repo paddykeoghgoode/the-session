@@ -19,35 +19,57 @@ export default function Navbar() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
-      if (user) {
-        const { data: profile } = await supabase
+    const fetchUserAndAdmin = async (authUser: typeof user) => {
+      if (authUser) {
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('is_admin')
-          .eq('id', user.id)
+          .eq('id', authUser.id)
           .single();
-        setIsAdmin(profile?.is_admin === true);
+
+        if (error) {
+          console.error('Error fetching admin status:', error.message);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.is_admin === true);
+        }
       } else {
         setIsAdmin(false);
       }
     };
-    getUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
+    const initAuth = async () => {
+      // Get current session - this reads from cookies
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('Session error:', sessionError.message);
+      }
+
+      // If we have a session, verify it's valid by getting the user
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-        setIsAdmin(profile?.is_admin === true);
+        const { data: { user: verifiedUser }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error('User verification error:', userError.message);
+          setUser(null);
+          setIsAdmin(false);
+        } else {
+          setUser(verifiedUser);
+          await fetchUserAndAdmin(verifiedUser);
+        }
       } else {
+        setUser(null);
         setIsAdmin(false);
       }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      setUser(session?.user ?? null);
+      await fetchUserAndAdmin(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
