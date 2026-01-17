@@ -63,6 +63,22 @@ export default function Navbar() {
         console.log('[Navbar] Setting user from session');
         setUser(session.user);
 
+        // Validate/refresh the session before making database queries
+        // This ensures the access token is valid
+        console.log('[Navbar] Validating session with getUser()');
+        const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error('[Navbar] getUser() failed:', userError.message);
+          // Session is invalid, clear everything
+          setUser(null);
+          setIsAdmin(false);
+          setAuthLoading(false);
+          return;
+        }
+
+        console.log('[Navbar] Session validated, user:', validatedUser?.id);
+
         // Fetch admin status
         const adminStatus = await fetchAdminStatus(session.user.id);
         console.log('[Navbar] Setting isAdmin to:', adminStatus, 'isMounted:', isMounted);
