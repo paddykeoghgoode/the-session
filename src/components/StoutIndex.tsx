@@ -20,11 +20,14 @@ export default function StoutIndex() {
 
     async function fetchStoutIndex() {
       try {
+        console.log('Fetching stout index...');
         // Use the pre-calculated current_stout_index view
         const { data: indexData, error: fetchError } = await supabase
           .from('current_stout_index')
           .select('*')
           .single();
+
+        console.log('Stout index result:', { indexData, error: fetchError?.message });
 
         if (fetchError) {
           console.error('Error fetching stout index:', fetchError);

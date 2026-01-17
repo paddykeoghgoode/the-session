@@ -21,19 +21,24 @@ export default function Navbar() {
   useEffect(() => {
     const fetchUserAndAdmin = async (authUser: typeof user) => {
       if (authUser) {
+        console.log('Fetching admin status for user:', authUser.id, authUser.email);
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, username')
           .eq('id', authUser.id)
           .single();
+
+        console.log('Profile result:', { profile, error: error?.message });
 
         if (error) {
           console.error('Error fetching admin status:', error.message);
           setIsAdmin(false);
         } else {
+          console.log('Setting isAdmin to:', profile?.is_admin === true);
           setIsAdmin(profile?.is_admin === true);
         }
       } else {
+        console.log('No auth user, setting isAdmin to false');
         setIsAdmin(false);
       }
     };
