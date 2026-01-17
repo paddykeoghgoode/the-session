@@ -71,15 +71,7 @@ export default function Navbar() {
     setUser(null);
     setIsAdmin(false);
 
-    try {
-      // Sign out on client - this clears localStorage tokens
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (e) {
-      // Continue even if client signout fails
-      console.error('Client signout error:', e);
-    }
-
-    // Clear any remaining Supabase localStorage items manually
+    // Clear any Supabase localStorage items
     if (typeof window !== 'undefined') {
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-')) {
@@ -88,8 +80,17 @@ export default function Navbar() {
       });
     }
 
-    // Navigate to server-side signout to clear cookies, then home
-    window.location.href = '/auth/signout';
+    try {
+      // Sign out on client - this clears tokens
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      // Continue even if client signout fails
+      console.error('Client signout error:', e);
+    }
+
+    // Navigate to server-side signout to clear cookies and redirect home
+    // Use replace to prevent back button returning to authenticated state
+    window.location.replace('/auth/signout');
   };
 
   const navLinks = [

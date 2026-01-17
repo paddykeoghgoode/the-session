@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
@@ -26,17 +26,29 @@ interface PendingReview {
 function AdminReviewsContent() {
   const [reviews, setReviews] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const filter = searchParams.get('filter') || 'pending';
-  const supabase = createClient();
+  // Memoize supabase client to prevent recreation on each render
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function checkAdminAndFetch() {
       try {
+        // First check session, then validate with getUser
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          router.push('/auth/login');
+          return;
+        }
+
+        // Validate the session with the server
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+
         if (userError || !user) {
           router.push('/auth/login');
           return;
@@ -54,6 +66,7 @@ function AdminReviewsContent() {
         }
 
         setIsAdmin(true);
+        setAuthChecking(false);
 
         // Fetch reviews
         let query = supabase
@@ -80,8 +93,7 @@ function AdminReviewsContent() {
     }
 
     checkAdminAndFetch();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [supabase, router, filter]);
 
   const handleApprove = async (reviewId: string) => {
     setActionLoading(reviewId);
@@ -130,10 +142,13 @@ function AdminReviewsContent() {
     setActionLoading(null);
   };
 
-  if (!isAdmin) {
+  if (authChecking || !isAdmin) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-stout-400">Checking permissions...</p>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-stout-600 border-t-irish-green-500 mb-4"></div>
+          <p className="text-stout-400">Checking permissions...</p>
+        </div>
       </div>
     );
   }

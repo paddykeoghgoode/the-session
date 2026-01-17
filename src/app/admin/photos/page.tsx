@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,55 +21,73 @@ interface PendingPhoto {
 function AdminPhotosContent() {
   const [photos, setPhotos] = useState<PendingPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const filter = searchParams.get('filter') || 'pending';
-  const supabase = createClient();
+  // Memoize supabase client to prevent recreation on each render
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function checkAdminAndFetch() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        // First check session, then validate with getUser
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          router.push('/auth/login');
+          return;
+        }
+
+        // Validate the session with the server
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.push('/auth/login');
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile?.is_admin) {
+          router.push('/');
+          return;
+        }
+
+        setIsAdmin(true);
+        setAuthChecking(false);
+
+        let query = supabase
+          .from('pub_photos')
+          .select(`
+            id,
+            pub_id,
+            storage_path,
+            caption,
+            file_size,
+            created_at,
+            pub:pubs(name),
+            profile:profiles(username, display_name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (filter === 'pending') {
+          query = query.eq('is_approved', false);
+        }
+
+        const { data } = await query.limit(50);
+        setPhotos(data || []);
+        setLoading(false);
+      } catch (error) {
+        console.error('Auth check failed:', error);
         router.push('/auth/login');
-        return;
       }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.is_admin) {
-        router.push('/');
-        return;
-      }
-
-      setIsAdmin(true);
-
-      let query = supabase
-        .from('pub_photos')
-        .select(`
-          id,
-          pub_id,
-          storage_path,
-          caption,
-          file_size,
-          created_at,
-          pub:pubs(name),
-          profile:profiles(username, display_name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (filter === 'pending') {
-        query = query.eq('is_approved', false);
-      }
-
-      const { data } = await query.limit(50);
-      setPhotos(data || []);
-      setLoading(false);
     }
 
     checkAdminAndFetch();
@@ -114,10 +132,13 @@ function AdminPhotosContent() {
     return data.publicUrl;
   };
 
-  if (!isAdmin) {
+  if (authChecking || !isAdmin) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-stout-400">Checking permissions...</p>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-stout-600 border-t-irish-green-500 mb-4"></div>
+          <p className="text-stout-400">Checking permissions...</p>
+        </div>
       </div>
     );
   }

@@ -70,7 +70,7 @@ V2 tables:
 - `pub_menus` - Uploaded menu files
 - `pub_likes` - User pub favorites
 
-Migrations are in `supabase/migrations/` (24+ files) and should be run in order via Supabase SQL Editor.
+Migrations are in `supabase/migrations/` (24 files, 001-024) and should be run in order via Supabase SQL Editor.
 
 ### Type System
 
