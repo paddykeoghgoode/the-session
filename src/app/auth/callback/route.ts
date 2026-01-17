@@ -4,6 +4,16 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const errorParam = requestUrl.searchParams.get('error');
+  const errorDescription = requestUrl.searchParams.get('error_description');
+
+  // Handle OAuth errors from provider
+  if (errorParam) {
+    console.error('OAuth provider error:', errorParam, errorDescription);
+    return NextResponse.redirect(
+      new URL(`/auth/login?error=${encodeURIComponent(errorDescription || errorParam)}`, requestUrl.origin)
+    );
+  }
 
   if (!code) {
     // No code, redirect to home
@@ -34,24 +44,35 @@ export async function GET(request: NextRequest) {
   const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    console.error('OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/auth/login?error=oauth_failed', requestUrl.origin));
+    console.error('OAuth callback error:', error.message);
+    return NextResponse.redirect(
+      new URL(`/auth/login?error=${encodeURIComponent(error.message)}`, requestUrl.origin)
+    );
+  }
+
+  if (!session) {
+    console.error('OAuth callback: No session returned');
+    return NextResponse.redirect(new URL('/auth/login?error=no_session', requestUrl.origin));
   }
 
   // Determine redirect destination
   let redirectPath = '/';
 
-  if (session?.user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', session.user.id)
-      .single();
+  // Check if profile exists and has username
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', session.user.id)
+    .single();
 
-    // If no username, redirect to profile setup
-    if (!profile?.username) {
-      redirectPath = '/profile/setup';
-    }
+  if (profileError && profileError.code !== 'PGRST116') {
+    // PGRST116 = no rows returned, which is fine (new user)
+    console.error('Profile fetch error:', profileError.message);
+  }
+
+  // If no profile or no username, redirect to profile setup
+  if (!profile || !profile.username) {
+    redirectPath = '/profile/setup';
   }
 
   // Create response with correct redirect
