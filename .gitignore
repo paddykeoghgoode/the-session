@@ -32,3 +32,11 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android (Capacitor)
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+android/*.apk
+*.keystore
