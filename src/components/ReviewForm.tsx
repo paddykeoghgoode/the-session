@@ -52,13 +52,18 @@ export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewF
       }
 
       // Check if user is trusted (auto-approve their reviews)
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_trusted, is_admin')
         .eq('id', user.id)
         .single();
 
-      const isAutoApproved = profile?.is_trusted || profile?.is_admin;
+      if (profileError) {
+        console.error('Failed to fetch profile for auto-approval:', profileError);
+        // Continue with false auto-approval - review will need manual approval
+      }
+
+      const isAutoApproved = profile?.is_trusted || profile?.is_admin || false;
 
       const { error: insertError } = await supabase.from('reviews').upsert({
         pub_id: pubId,
