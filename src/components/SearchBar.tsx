@@ -135,19 +135,29 @@ export default function SearchBar() {
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search pubs..."
+          aria-label="Search for pubs by name or address"
+          aria-autocomplete="list"
+          aria-expanded={isOpen && query.length >= 1}
+          aria-controls="search-results"
+          role="combobox"
           className="w-full pl-9 pr-4 py-2 bg-cream-300 border border-cream-400 rounded-lg text-stout-900 placeholder-stout-500 focus:outline-none focus:ring-2 focus:ring-stout-400 focus:border-stout-400 text-sm shadow-inner"
         />
       </div>
 
       {/* Dropdown results */}
       {isOpen && query.length >= 1 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-stout-800 border border-stout-700 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div
+          id="search-results"
+          role="listbox"
+          aria-label="Search results"
+          className="absolute top-full left-0 right-0 mt-1 bg-stout-800 border border-stout-700 rounded-lg shadow-xl z-50 overflow-hidden"
+        >
           {isLoading ? (
             <div className="px-4 py-3 text-sm text-stout-400">Searching...</div>
           ) : results.length > 0 ? (
-            <ul>
+            <ul role="listbox">
               {results.map((pub, index) => (
-                <li key={pub.id}>
+                <li key={pub.id} role="option" aria-selected={index === selectedIndex}>
                   <button
                     onClick={() => handleSelect(pub)}
                     className={`w-full text-left px-4 py-3 hover:bg-stout-700 transition-colors ${

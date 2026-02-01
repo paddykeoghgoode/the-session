@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
+import { sanitizeText } from '@/lib/sanitize';
 import Image from 'next/image';
 
 interface PhotoUploadProps {
@@ -165,7 +166,7 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
         file_size: blob.size,
         width,
         height,
-        caption: caption.trim() || null,
+        caption: sanitizeText(caption) || null,
         is_approved: isAutoApproved,
       });
 

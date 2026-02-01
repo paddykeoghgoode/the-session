@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import { createServerSupabaseClient, getUser } from '@/lib/supabase-server';
 import StarRating from '@/components/StarRating';
 import PriceTable from '@/components/PriceTable';
@@ -21,10 +22,46 @@ import CreamRating from '@/components/CreamRating';
 import PriceHistoryGraph from '@/components/PriceHistoryGraph';
 import ReportButton from '@/components/ReportButton';
 import AdminDealManager from '@/components/AdminDealManager';
+import StructuredData from '@/components/StructuredData';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
 export const revalidate = 60;
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createServerSupabaseClient();
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidRegex.test(id);
+
+  const { data: pub } = await supabase
+    .from('pubs')
+    .select('name, address')
+    .eq(isUuid ? 'id' : 'slug', id)
+    .single();
+
+  if (!pub) {
+    return {
+      title: 'Pub Not Found - The Session',
+    };
+  }
+
+  return {
+    title: `${pub.name} - Pint Prices & Reviews | The Session`,
+    description: `Check pint prices, reviews, and deals at ${pub.name}, ${pub.address}. Find Guinness prices and more on The Session.`,
+    openGraph: {
+      title: `${pub.name} - The Session`,
+      description: `Pint prices and reviews for ${pub.name} in Dublin`,
+      type: 'website',
+    },
+  };
+}
 
 async function getPub(idOrSlug: string): Promise<Pub | null> {
   const supabase = await createServerSupabaseClient();
@@ -203,7 +240,11 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      {/* Structured data for SEO */}
+      <StructuredData type="pub" data={pub} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
       <nav className="mb-6">
         <ol className="flex items-center gap-2 text-sm">
@@ -664,7 +705,8 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
       </div>
 
       {/* Quick Add Price Button */}
-      <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
-    </div>
+        <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
+      </div>
+    </>
   );
 }

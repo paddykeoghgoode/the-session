@@ -102,6 +102,33 @@ export default function AmenityVoting({ pubId, currentValues, userId }: AmenityV
   const handleVote = async (amenity: AmenityKey, vote: boolean) => {
     if (!userId) return;
 
+    // Store previous state for rollback
+    const previousVote = votes[amenity];
+    const previousSummary = summaries[amenity];
+
+    // Optimistically update UI immediately
+    setVotes((prev) => ({ ...prev, [amenity]: vote }));
+
+    // Optimistically update summary
+    if (previousSummary) {
+      const wasYes = previousVote === true;
+      const wasNo = previousVote === false;
+      const newSummary = { ...previousSummary };
+
+      // Remove old vote from counts
+      if (wasYes) newSummary.yes_votes--;
+      if (wasNo) newSummary.no_votes--;
+
+      // Add new vote
+      if (vote) newSummary.yes_votes++;
+      else newSummary.no_votes++;
+
+      // Update total if this is a new vote
+      if (previousVote === null) newSummary.total_votes++;
+
+      setSummaries((prev) => ({ ...prev, [amenity]: newSummary }));
+    }
+
     setLoading(amenity);
 
     try {
@@ -119,10 +146,7 @@ export default function AmenityVoting({ pubId, currentValues, userId }: AmenityV
 
       if (error) throw error;
 
-      // Update local state
-      setVotes((prev) => ({ ...prev, [amenity]: vote }));
-
-      // Refresh summaries
+      // Refresh summaries from server to ensure accuracy
       const { data: summaryData } = await supabase
         .from('pub_amenity_vote_summary')
         .select('*')
@@ -135,6 +159,11 @@ export default function AmenityVoting({ pubId, currentValues, userId }: AmenityV
       }
     } catch (err) {
       console.error('Error voting:', err);
+      // Rollback on error
+      setVotes((prev) => ({ ...prev, [amenity]: previousVote }));
+      if (previousSummary) {
+        setSummaries((prev) => ({ ...prev, [amenity]: previousSummary }));
+      }
     } finally {
       setLoading(null);
     }
