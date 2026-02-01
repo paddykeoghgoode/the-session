@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatPrice, formatRelativeTime } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
 import type { Price, Drink } from '@/types';
@@ -21,15 +22,23 @@ export default function PriceTable({ prices, showPubName = false, userId, pubId,
   const [inlineDealDesc, setInlineDealDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const router = useRouter();
   const supabase = createClient();
 
   const handleInlineSubmit = async (drinkId: number, drinkName: string) => {
     if (!userId || !pubId || !inlinePrice) return;
 
     const priceNum = parseFloat(inlinePrice);
-    if (isNaN(priceNum) || priceNum <= 0) return;
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setSubmitError('Please enter a valid price');
+      return;
+    }
 
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
       const { error } = await supabase.from('prices').insert({
         pub_id: pubId,
@@ -51,10 +60,11 @@ export default function PriceTable({ prices, showPubName = false, userId, pubId,
       // Clear success message after 3 seconds
       setTimeout(() => setSubmitSuccess(null), 3000);
 
-      // Refresh the page to show updated prices
-      window.location.reload();
+      // Refresh data without full page reload
+      router.refresh();
     } catch (err) {
       console.error('Error submitting price:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit price. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -64,29 +74,41 @@ export default function PriceTable({ prices, showPubName = false, userId, pubId,
     if (!userId) return;
 
     const currentVote = votingStates[priceId];
+    setVoteError(null);
+
+    // Optimistically update the UI
+    const newVoteState = currentVote === voteType ? null : voteType;
+    setVotingStates((prev) => ({ ...prev, [priceId]: newVoteState }));
 
     try {
       if (currentVote === voteType) {
         // Remove vote
-        await supabase
+        const { error } = await supabase
           .from('price_votes')
           .delete()
           .eq('price_id', priceId)
           .eq('user_id', userId);
-        setVotingStates((prev) => ({ ...prev, [priceId]: null }));
+
+        if (error) throw error;
       } else {
         // Upsert vote
-        await supabase
+        const { error } = await supabase
           .from('price_votes')
           .upsert({
             price_id: priceId,
             user_id: userId,
             vote_type: voteType,
           });
-        setVotingStates((prev) => ({ ...prev, [priceId]: voteType }));
+
+        if (error) throw error;
       }
     } catch (error) {
       console.error('Error voting:', error);
+      // Rollback optimistic update on error
+      setVotingStates((prev) => ({ ...prev, [priceId]: currentVote }));
+      setVoteError('Failed to record vote. Please try again.');
+      // Clear error after 3 seconds
+      setTimeout(() => setVoteError(null), 3000);
     }
   };
 
@@ -123,6 +145,25 @@ export default function PriceTable({ prices, showPubName = false, userId, pubId,
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           Price for {submitSuccess} submitted! Thanks for contributing.
+        </div>
+      )}
+
+      {/* Error toasts */}
+      {submitError && (
+        <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          {submitError}
+        </div>
+      )}
+
+      {voteError && (
+        <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          {voteError}
         </div>
       )}
 

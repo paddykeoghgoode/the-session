@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import { checkRateLimit, formatTimeUntilReset, RATE_LIMITS } from '@/lib/rate-limit';
+import { sanitizeComment } from '@/lib/sanitize';
 import StarRating from './StarRating';
 import { RATING_CATEGORIES } from '@/types';
 
@@ -41,6 +43,18 @@ export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewF
       return;
     }
 
+    // Check rate limit
+    const rateCheck = checkRateLimit(
+      `review-submit-${pubId}`,
+      RATE_LIMITS.REVIEW_SUBMIT.limit,
+      RATE_LIMITS.REVIEW_SUBMIT.windowMs
+    );
+
+    if (!rateCheck.allowed) {
+      setError(`Too many reviews submitted. Try again in ${formatTimeUntilReset(rateCheck.resetAt)}`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -52,13 +66,18 @@ export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewF
       }
 
       // Check if user is trusted (auto-approve their reviews)
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_trusted, is_admin')
         .eq('id', user.id)
         .single();
 
-      const isAutoApproved = profile?.is_trusted || profile?.is_admin;
+      if (profileError) {
+        console.error('Failed to fetch profile for auto-approval:', profileError);
+        // Continue with false auto-approval - review will need manual approval
+      }
+
+      const isAutoApproved = profile?.is_trusted || profile?.is_admin || false;
 
       const { error: insertError } = await supabase.from('reviews').upsert({
         pub_id: pubId,
@@ -69,7 +88,7 @@ export default function ReviewForm({ pubId, hasFood = true, onSuccess }: ReviewF
         staff_friendliness: ratings.staff_friendliness || null,
         safety: ratings.safety || null,
         value_for_money: ratings.value_for_money || null,
-        comment: comment.trim() || null,
+        comment: sanitizeComment(comment) || null,
         is_approved: isAutoApproved,
       }, {
         onConflict: 'pub_id,user_id',

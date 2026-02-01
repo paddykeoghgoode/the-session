@@ -25,11 +25,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-stout-950 text-cream-100`}>
+        {/* Skip to main content link for accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-irish-green-600 focus:text-white focus:rounded-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <Navbar />
-        <main className="min-h-screen">
+        <main id="main-content" className="min-h-screen" role="main">
           {children}
         </main>
-        <footer className="bg-stout-900 border-t border-stout-700 py-8 mt-12">
+        <footer className="bg-stout-900 border-t border-stout-700 py-8 mt-12" role="contentinfo">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="text-center md:text-left flex items-center gap-3">

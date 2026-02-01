@@ -21,6 +21,12 @@ export function formatDate(dateString: string): string {
 
 export function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
+
+  // Check for invalid date
+  if (isNaN(date.getTime())) {
+    return 'Unknown date';
+  }
+
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -32,14 +38,14 @@ export function formatRelativeTime(dateString: string): string {
 }
 
 export function getGoogleMapsUrl(pub: { latitude?: number | null; longitude?: number | null; address: string }): string {
-  if (pub.latitude && pub.longitude) {
+  if (pub.latitude !== null && pub.latitude !== undefined && pub.longitude !== null && pub.longitude !== undefined) {
     return `https://www.google.com/maps/search/?api=1&query=${pub.latitude},${pub.longitude}`;
   }
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pub.address + ', Dublin, Ireland')}`;
 }
 
 export function getGoogleMapsDirectionsUrl(pub: { latitude?: number | null; longitude?: number | null; address: string }): string {
-  if (pub.latitude && pub.longitude) {
+  if (pub.latitude !== null && pub.latitude !== undefined && pub.longitude !== null && pub.longitude !== undefined) {
     return `https://www.google.com/maps/dir/?api=1&destination=${pub.latitude},${pub.longitude}`;
   }
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pub.address + ', Dublin, Ireland')}`;
@@ -71,18 +77,32 @@ export function calculateAverageRating(
 }
 
 export function slugify(text: string): string {
-  return text
+  const slug = text
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/--+/g, '-')
     .trim();
+
+  // Return a fallback if the slug is empty (e.g., text was only special chars)
+  return slug || 'untitled';
 }
 
 // Format time from HH:MM:SS to 12-hour format (e.g., "10:30 AM")
 export function formatTime(time: string | null): string {
   if (!time) return 'Closed';
-  const [hours, minutes] = time.split(':').map(Number);
+
+  const parts = time.split(':');
+  if (parts.length < 2) return 'Invalid';
+
+  const hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+
+  // Validate hour and minute ranges
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return 'Invalid';
+  }
+
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12;
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
@@ -148,6 +168,16 @@ export function getDistanceKm(
   lat2: number,
   lon2: number
 ): number {
+  // Validate that all coordinates are finite numbers
+  if ([lat1, lon1, lat2, lon2].some(v => !isFinite(v))) {
+    return Infinity;
+  }
+
+  // Validate coordinate bounds (lat: -90 to 90, lon: -180 to 180)
+  if (Math.abs(lat1) > 90 || Math.abs(lat2) > 90 || Math.abs(lon1) > 180 || Math.abs(lon2) > 180) {
+    return Infinity;
+  }
+
   const R = 6371; // Earth's radius in km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;

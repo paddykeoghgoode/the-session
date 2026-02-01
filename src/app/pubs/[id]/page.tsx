@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import { createServerSupabaseClient, getUser } from '@/lib/supabase-server';
 import StarRating from '@/components/StarRating';
 import PriceTable from '@/components/PriceTable';
@@ -20,10 +22,46 @@ import CreamRating from '@/components/CreamRating';
 import PriceHistoryGraph from '@/components/PriceHistoryGraph';
 import ReportButton from '@/components/ReportButton';
 import AdminDealManager from '@/components/AdminDealManager';
+import StructuredData from '@/components/StructuredData';
 import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
 export const revalidate = 60;
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createServerSupabaseClient();
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidRegex.test(id);
+
+  const { data: pub } = await supabase
+    .from('pubs')
+    .select('name, address')
+    .eq(isUuid ? 'id' : 'slug', id)
+    .single();
+
+  if (!pub) {
+    return {
+      title: 'Pub Not Found - The Session',
+    };
+  }
+
+  return {
+    title: `${pub.name} - Pint Prices & Reviews | The Session`,
+    description: `Check pint prices, reviews, and deals at ${pub.name}, ${pub.address}. Find Guinness prices and more on The Session.`,
+    openGraph: {
+      title: `${pub.name} - The Session`,
+      description: `Pint prices and reviews for ${pub.name} in Dublin`,
+      type: 'website',
+    },
+  };
+}
 
 async function getPub(idOrSlug: string): Promise<Pub | null> {
   const supabase = await createServerSupabaseClient();
@@ -33,25 +71,33 @@ async function getPub(idOrSlug: string): Promise<Pub | null> {
   const isUuid = uuidRegex.test(idOrSlug);
 
   if (isUuid) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('pubs')
       .select('*')
       .eq('id', idOrSlug)
       .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Failed to fetch pub by ID:', error);
+    }
     return data;
   } else {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('pubs')
       .select('*')
       .eq('slug', idOrSlug)
       .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Failed to fetch pub by slug:', error);
+    }
     return data;
   }
 }
 
 async function getPrices(pubId: string): Promise<Price[]> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('prices')
     .select(`
       *,
@@ -59,12 +105,17 @@ async function getPrices(pubId: string): Promise<Price[]> {
     `)
     .eq('pub_id', pubId)
     .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch prices:', error);
+    return [];
+  }
   return data || [];
 }
 
 async function getReviews(pubId: string): Promise<Review[]> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('reviews')
     .select(`
       *,
@@ -73,37 +124,64 @@ async function getReviews(pubId: string): Promise<Review[]> {
     .eq('pub_id', pubId)
     .eq('is_approved', true)
     .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch reviews:', error);
+    return [];
+  }
   return data || [];
 }
 
 async function getPhotos(pubId: string): Promise<PubPhoto[]> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('pub_photos')
     .select('*')
     .eq('pub_id', pubId)
     .eq('is_approved', true)
     .order('is_primary', { ascending: false })
     .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch photos:', error);
+    return [];
+  }
   return data || [];
 }
 
+const getCachedDrinks = unstable_cache(
+  async (): Promise<Drink[]> => {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('drinks')
+      .select('*')
+      .order('name');
+
+    if (error) {
+      console.error('Failed to fetch drinks:', error);
+      return [];
+    }
+    return data || [];
+  },
+  ['drinks-list'],
+  { revalidate: 3600 } // Cache for 1 hour
+);
+
 async function getDrinks(): Promise<Drink[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from('drinks')
-    .select('*')
-    .order('name');
-  return data || [];
+  return getCachedDrinks();
 }
 
 async function getUserProfile(userId: string): Promise<Profile | null> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Failed to fetch user profile:', error);
+  }
   return data;
 }
 
@@ -162,7 +240,11 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      {/* Structured data for SEO */}
+      <StructuredData type="pub" data={pub} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
       <nav className="mb-6">
         <ol className="flex items-center gap-2 text-sm">
@@ -465,6 +547,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
                       src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pub-photos/${photo.storage_path}`}
                       alt={photo.caption || pub.name}
                       fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
                       className="object-cover hover:scale-105 transition-transform"
                     />
                     {photo.caption && (
@@ -622,7 +705,8 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
       </div>
 
       {/* Quick Add Price Button */}
-      <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
-    </div>
+        <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
+      </div>
+    </>
   );
 }

@@ -50,39 +50,45 @@ export default function PubLikeButton({
       return;
     }
 
+    // Optimistically update UI immediately
+    const wasLiked = isLiked;
+    const previousCount = likeCount;
+
+    setIsLiked(!wasLiked);
+    setLikeCount(wasLiked ? Math.max(0, previousCount - 1) : previousCount + 1);
     setIsLoading(true);
     setIsAnimating(true);
 
-    if (isLiked) {
-      // Unlike
-      const { error } = await supabase
-        .from('pub_likes')
-        .delete()
-        .eq('pub_id', pubId)
-        .eq('user_id', user.id);
+    try {
+      if (wasLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('pub_likes')
+          .delete()
+          .eq('pub_id', pubId)
+          .eq('user_id', user.id);
 
-      if (!error) {
-        setIsLiked(false);
-        setLikeCount(prev => Math.max(0, prev - 1));
-      }
-    } else {
-      // Like
-      const { error } = await supabase
-        .from('pub_likes')
-        .insert({
-          pub_id: pubId,
-          user_id: user.id,
-        });
+        if (error) throw error;
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('pub_likes')
+          .insert({
+            pub_id: pubId,
+            user_id: user.id,
+          });
 
-      if (!error) {
-        setIsLiked(true);
-        setLikeCount(prev => prev + 1);
+        if (error) throw error;
       }
+    } catch (error) {
+      // Rollback on error
+      console.error('Error toggling like:', error);
+      setIsLiked(wasLiked);
+      setLikeCount(previousCount);
     }
 
     setIsLoading(false);
     setTimeout(() => setIsAnimating(false), 300);
-    router.refresh();
   };
 
   const sizeClasses = {

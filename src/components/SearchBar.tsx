@@ -8,6 +8,31 @@ interface SearchResult {
   id: string;
   name: string;
   address: string;
+  slug: string | null;
+}
+
+// Highlight matching text in search results
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+  if (!query || query.length < 1) {
+    return <>{text}</>;
+  }
+
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <span key={i} className="text-irish-green-400 font-semibold">
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
 }
 
 export default function SearchBar() {
@@ -35,29 +60,34 @@ export default function SearchBar() {
   // Search pubs as user types
   useEffect(() => {
     const searchPubs = async () => {
-      if (query.length < 2) {
+      if (query.length < 1) {
         setResults([]);
         return;
       }
 
       setIsLoading(true);
+
+      // Search by name OR address, only show active pubs
       const { data } = await supabase
         .from('pubs')
-        .select('id, name, address')
-        .ilike('name', `%${query}%`)
-        .limit(6);
+        .select('id, name, address, slug')
+        .or(`name.ilike.%${query}%,address.ilike.%${query}%`)
+        .neq('is_permanently_closed', true)
+        .order('name')
+        .limit(8);
 
       setResults(data || []);
       setIsLoading(false);
       setSelectedIndex(-1);
     };
 
-    const debounce = setTimeout(searchPubs, 200);
+    const debounce = setTimeout(searchPubs, 150); // Faster response
     return () => clearTimeout(debounce);
   }, [query, supabase]);
 
   const handleSelect = (pub: SearchResult) => {
-    router.push(`/pubs/${pub.id}`);
+    // Use slug for cleaner URLs if available
+    router.push(`/pubs/${pub.slug || pub.id}`);
     setQuery('');
     setIsOpen(false);
   };
@@ -105,27 +135,41 @@ export default function SearchBar() {
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search pubs..."
+          aria-label="Search for pubs by name or address"
+          aria-autocomplete="list"
+          aria-expanded={isOpen && query.length >= 1}
+          aria-controls="search-results"
+          role="combobox"
           className="w-full pl-9 pr-4 py-2 bg-cream-300 border border-cream-400 rounded-lg text-stout-900 placeholder-stout-500 focus:outline-none focus:ring-2 focus:ring-stout-400 focus:border-stout-400 text-sm shadow-inner"
         />
       </div>
 
       {/* Dropdown results */}
-      {isOpen && query.length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-stout-800 border border-stout-700 rounded-lg shadow-xl z-50 overflow-hidden">
+      {isOpen && query.length >= 1 && (
+        <div
+          id="search-results"
+          role="listbox"
+          aria-label="Search results"
+          className="absolute top-full left-0 right-0 mt-1 bg-stout-800 border border-stout-700 rounded-lg shadow-xl z-50 overflow-hidden"
+        >
           {isLoading ? (
             <div className="px-4 py-3 text-sm text-stout-400">Searching...</div>
           ) : results.length > 0 ? (
-            <ul>
+            <ul role="listbox">
               {results.map((pub, index) => (
-                <li key={pub.id}>
+                <li key={pub.id} role="option" aria-selected={index === selectedIndex}>
                   <button
                     onClick={() => handleSelect(pub)}
                     className={`w-full text-left px-4 py-3 hover:bg-stout-700 transition-colors ${
                       index === selectedIndex ? 'bg-stout-700' : ''
                     }`}
                   >
-                    <p className="text-cream-100 font-medium text-sm">{pub.name}</p>
-                    <p className="text-stout-400 text-xs truncate">{pub.address}</p>
+                    <p className="text-cream-100 font-medium text-sm">
+                      <HighlightMatch text={pub.name} query={query} />
+                    </p>
+                    <p className="text-stout-400 text-xs truncate">
+                      <HighlightMatch text={pub.address} query={query} />
+                    </p>
                   </button>
                 </li>
               ))}

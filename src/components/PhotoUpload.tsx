@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
+import { sanitizeText } from '@/lib/sanitize';
 import Image from 'next/image';
 
 interface PhotoUploadProps {
@@ -10,7 +11,8 @@ interface PhotoUploadProps {
   onSuccess?: () => void;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_COMPRESSED_SIZE = 5 * 1024 * 1024; // 5MB after compression
+const MAX_ORIGINAL_SIZE = 10 * 1024 * 1024; // 10MB before compression
 const MAX_DIMENSION = 1920; // Max width/height
 const JPEG_QUALITY = 0.8;
 
@@ -85,7 +87,7 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
     }
 
     // Check file size before compression
-    if (file.size > MAX_FILE_SIZE * 2) {
+    if (file.size > MAX_ORIGINAL_SIZE) {
       setError('Image is too large. Maximum size is 10MB before compression.');
       return;
     }
@@ -117,7 +119,7 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
       const { blob, width, height } = await compressImage(file);
 
       // Check compressed size
-      if (blob.size > MAX_FILE_SIZE) {
+      if (blob.size > MAX_COMPRESSED_SIZE) {
         setError('Image is still too large after compression. Try a smaller image.');
         setIsUploading(false);
         return;
@@ -140,13 +142,20 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
       }
 
       // Check if user is trusted (auto-approve their uploads)
-      const { data: profile } = await supabase
+      // Note: For stronger consistency, this should be handled by a database trigger
+      // to avoid race conditions if trust status changes between check and insert
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_trusted, is_admin')
         .eq('id', userId)
         .single();
 
-      const isAutoApproved = profile?.is_trusted || profile?.is_admin;
+      if (profileError) {
+        console.error('Failed to fetch profile for auto-approval:', profileError);
+        // Continue with false auto-approval - photo will need manual approval
+      }
+
+      const isAutoApproved = profile?.is_trusted || profile?.is_admin || false;
 
       // Create database record
       const { error: dbError } = await supabase.from('pub_photos').insert({
@@ -157,13 +166,17 @@ export default function PhotoUpload({ pubId, userId, onSuccess }: PhotoUploadPro
         file_size: blob.size,
         width,
         height,
-        caption: caption.trim() || null,
+        caption: sanitizeText(caption) || null,
         is_approved: isAutoApproved,
       });
 
       if (dbError) {
-        // Try to clean up uploaded file
-        await supabase.storage.from('pub-photos').remove([filename]);
+        // Try to clean up uploaded file - don't let cleanup errors mask the original error
+        try {
+          await supabase.storage.from('pub-photos').remove([filename]);
+        } catch (cleanupError) {
+          console.error('Failed to clean up orphaned file:', filename, cleanupError);
+        }
         throw dbError;
       }
 
