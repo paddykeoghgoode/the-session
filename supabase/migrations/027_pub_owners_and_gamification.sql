@@ -175,8 +175,15 @@ CREATE INDEX IF NOT EXISTS idx_drink_suggestions_status ON drink_suggestions(sta
 -- ADD SPIRITS AND COCKTAILS TO DRINKS
 -- ============================================
 
+-- First, drop the existing category check constraint to allow new categories
+ALTER TABLE drinks DROP CONSTRAINT IF EXISTS drinks_category_check;
+
 -- Add category column to drinks if not exists
 ALTER TABLE drinks ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'beer';
+
+-- Add new check constraint with expanded categories
+ALTER TABLE drinks ADD CONSTRAINT drinks_category_check
+CHECK (category IN ('beer', 'cider', 'non-alcoholic', 'stout', 'lager', 'ale', 'spirit', 'cocktail', 'wine', 'soft_drink', 'other'));
 ALTER TABLE drinks ADD COLUMN IF NOT EXISTS base_spirit TEXT;
 ALTER TABLE drinks ADD COLUMN IF NOT EXISTS mixer TEXT;
 ALTER TABLE drinks ADD COLUMN IF NOT EXISTS is_shot BOOLEAN DEFAULT false;
