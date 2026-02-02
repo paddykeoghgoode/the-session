@@ -139,11 +139,19 @@ export interface Profile {
   id: string;
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   is_verified_local: boolean;
   is_trusted: boolean;
   is_admin: boolean;
   total_contributions: number;
   uploads_today: number;
+  // Points fields
+  total_points: number;
+  points_this_month: number;
+  current_rank: number | null;
+  // Referral
+  referral_code: string | null;
+  referred_by: string | null;
   created_at: string;
 }
 
@@ -386,3 +394,392 @@ export interface ContributorStats {
   photos_this_month: number;
   total_contributions: number;
 }
+
+// ============================================
+// USER ENGAGEMENT FEATURES
+// ============================================
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  favorite_drinks: number[];
+  home_latitude: number | null;
+  home_longitude: number | null;
+  default_radius_km: number;
+  email_weekly_digest: boolean;
+  email_price_alerts: boolean;
+  email_deal_alerts: boolean;
+  push_enabled: boolean;
+  preferred_vibes: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CheckIn {
+  id: string;
+  user_id: string;
+  pub_id: string;
+  verified_price_id: string | null;
+  photo_path: string | null;
+  photo_verified: boolean;
+  notes: string | null;
+  is_verified: boolean;
+  verified_at: string | null;
+  check_in_latitude: number | null;
+  check_in_longitude: number | null;
+  location_verified: boolean;
+  created_at: string;
+  // Joined fields
+  pub?: Pub;
+  profile?: Profile;
+}
+
+export interface PubStreak {
+  id: string;
+  user_id: string;
+  pub_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_check_in_date: string;
+  streak_started_at: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  pub?: Pub;
+}
+
+export interface PriceAlert {
+  id: string;
+  user_id: string;
+  drink_id: number | null;
+  max_price: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  radius_km: number;
+  pub_id: string | null;
+  is_active: boolean;
+  last_triggered_at: string | null;
+  created_at: string;
+  // Joined fields
+  drink?: Drink;
+  pub?: Pub;
+}
+
+export interface DealAlert {
+  id: string;
+  user_id: string;
+  price_id: string;
+  pub_id: string;
+  alert_type: 'new_deal' | 'price_drop' | 'verified_price';
+  is_read: boolean;
+  is_sent: boolean;
+  created_at: string;
+  // Joined fields
+  price?: Price;
+  pub?: Pub;
+}
+
+export interface PubCrawl {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  start_latitude: number | null;
+  start_longitude: number | null;
+  is_public: boolean;
+  estimated_duration_mins: number | null;
+  total_distance_km: number | null;
+  status: 'draft' | 'planned' | 'in_progress' | 'completed';
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  stops?: PubCrawlStop[];
+  profile?: Profile;
+}
+
+export interface PubCrawlStop {
+  id: string;
+  crawl_id: string;
+  pub_id: string;
+  stop_order: number;
+  planned_drink_id: number | null;
+  estimated_spend: number | null;
+  notes: string | null;
+  visited: boolean;
+  visited_at: string | null;
+  actual_spend: number | null;
+  created_at: string;
+  // Joined fields
+  pub?: Pub;
+  drink?: Drink;
+}
+
+export interface PubVibe {
+  id: string;
+  pub_id: string;
+  user_id: string | null;
+  vibe: string;
+  vote_count: number;
+  created_at: string;
+}
+
+export interface VibeOption {
+  id: number;
+  name: string;
+  category: 'atmosphere' | 'crowd' | 'style' | 'occasion';
+  icon: string | null;
+  is_active: boolean;
+}
+
+export interface PubVibeVote {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  vibe: string;
+  vote: boolean;
+  created_at: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_type: string;
+  badge_level: number;
+  pub_id: string | null;
+  earned_at: string;
+  expires_at: string | null;
+  metadata: Record<string, unknown>;
+  // Joined fields
+  pub?: Pub;
+  badge_info?: BadgeType;
+}
+
+export interface BadgeType {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  icon: string | null;
+  category: 'contribution' | 'streak' | 'expertise' | 'special';
+  is_active: boolean;
+}
+
+export interface PubSimilarity {
+  id: string;
+  pub_id: string;
+  similar_pub_id: string;
+  similarity_score: number;
+  shared_amenities: string[];
+  shared_vibes: string[];
+  similar_price_range: boolean;
+  similar_ratings: boolean;
+  calculated_at: string;
+  // Joined fields
+  similar_pub?: Pub;
+}
+
+// Vibe categories for UI grouping
+export const VIBE_CATEGORIES = {
+  atmosphere: { label: 'Atmosphere', vibes: ['cozy', 'lively', 'quiet', 'romantic', 'casual', 'upscale'] },
+  crowd: { label: 'Crowd', vibes: ['locals', 'tourists', 'students', 'professionals', 'mixed-age', 'young-crowd'] },
+  style: { label: 'Style', vibes: ['traditional', 'modern', 'hipster', 'sports-bar', 'cocktail-bar', 'dive-bar'] },
+  occasion: { label: 'Good For', vibes: ['first-date', 'catch-up', 'celebration', 'work-drinks', 'solo-drink', 'big-group'] },
+} as const;
+
+export const VIBE_ICONS: Record<string, string> = {
+  cozy: '🔥', lively: '🎉', quiet: '🤫', romantic: '💕', casual: '😎', upscale: '✨',
+  locals: '🏠', tourists: '🧳', students: '📚', professionals: '💼', 'mixed-age': '👥', 'young-crowd': '🎓',
+  traditional: '🍀', modern: '🆕', hipster: '🧔', 'sports-bar': '📺', 'cocktail-bar': '🍸', 'dive-bar': '🍺',
+  'first-date': '💝', 'catch-up': '☕', celebration: '🎊', 'work-drinks': '🤝', 'solo-drink': '🧘', 'big-group': '👨‍👩‍👧‍👦',
+};
+
+export const BADGE_ICONS: Record<string, string> = {
+  verified_this_week: '✓',
+  local_expert: '🏆',
+  pub_regular: '🍺',
+  streak_7: '🔥',
+  streak_30: '⚡',
+  price_hunter: '🎯',
+  photo_pro: '📸',
+  early_adopter: '🌟',
+  crawl_master: '🗺️',
+};
+
+// ============================================
+// PUB OWNERSHIP & GAMIFICATION
+// ============================================
+
+export interface PubOwnershipClaim {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  business_email: string;
+  business_name: string | null;
+  role: 'owner' | 'manager' | 'staff';
+  verification_code: string | null;
+  verification_sent_at: string | null;
+  status: 'pending' | 'email_sent' | 'verified' | 'approved' | 'rejected';
+  verified_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  pub?: Pub;
+}
+
+export interface PubOwner {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  role: 'owner' | 'manager' | 'staff';
+  can_edit_info: boolean;
+  can_add_prices: boolean;
+  can_add_deals: boolean;
+  can_add_events: boolean;
+  can_respond_reviews: boolean;
+  is_active: boolean;
+  created_at: string;
+  // Joined
+  pub?: Pub;
+  profile?: Profile;
+}
+
+export interface UserPoints {
+  id: string;
+  user_id: string;
+  points: number;
+  action_type: string;
+  reference_type: string | null;
+  reference_id: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+export interface PointsConfig {
+  action_type: string;
+  points: number;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface MonthlyLeaderboard {
+  id: string;
+  year: number;
+  month: number;
+  user_id: string;
+  total_points: number;
+  prices_submitted: number;
+  reviews_submitted: number;
+  photos_submitted: number;
+  check_ins: number;
+  rank: number | null;
+  prize_won: string | null;
+  prize_claimed: boolean;
+  created_at: string;
+  // Joined
+  profile?: Profile;
+}
+
+export interface DrinkSuggestion {
+  id: string;
+  user_id: string | null;
+  drink_name: string;
+  drink_category: 'beer' | 'cider' | 'stout' | 'lager' | 'ale' | 'spirit' | 'cocktail' | 'wine' | 'soft_drink' | 'other';
+  brand: string | null;
+  description: string | null;
+  base_spirit: string | null;
+  mixer: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'duplicate';
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
+  created_drink_id: number | null;
+  votes: number;
+  created_at: string;
+  // Joined
+  profile?: Profile;
+}
+
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  referral_code: string;
+  status: 'pending' | 'completed' | 'rewarded';
+  completed_at: string | null;
+  rewarded_at: string | null;
+  created_at: string;
+}
+
+export interface AdInquiry {
+  id: string;
+  business_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string | null;
+  ad_type: 'featured_deal' | 'sponsored_listing' | 'banner_ad' | 'pub_promotion' | 'event_promotion';
+  message: string | null;
+  budget_range: string | null;
+  pub_id: string | null;
+  status: 'new' | 'contacted' | 'negotiating' | 'active' | 'completed' | 'declined';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeaturedContent {
+  id: string;
+  content_type: 'pub' | 'deal' | 'event' | 'banner';
+  pub_id: string | null;
+  price_id: string | null;
+  title: string | null;
+  description: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  placement: 'deals_page' | 'homepage' | 'search_results' | 'pub_page' | 'leaderboard';
+  priority: number;
+  start_date: string;
+  end_date: string;
+  impressions: number;
+  clicks: number;
+  is_active: boolean;
+  created_at: string;
+  // Joined
+  pub?: Pub;
+}
+
+// Points action types
+export const POINTS_ACTIONS = {
+  price_submit: { points: 10, label: 'Price submitted', icon: '💰' },
+  price_verified: { points: 5, label: 'Price verified', icon: '✓' },
+  review_submit: { points: 15, label: 'Review submitted', icon: '⭐' },
+  review_helpful: { points: 3, label: 'Helpful review', icon: '👍' },
+  photo_submit: { points: 5, label: 'Photo uploaded', icon: '📷' },
+  photo_approved: { points: 10, label: 'Photo approved', icon: '✅' },
+  check_in: { points: 5, label: 'Checked in', icon: '📍' },
+  check_in_verified: { points: 10, label: 'Verified check-in', icon: '🎯' },
+  first_price_pub: { points: 25, label: 'First at pub!', icon: '🏆' },
+  streak_bonus: { points: 20, label: 'Streak bonus', icon: '🔥' },
+  deal_found: { points: 15, label: 'Deal found', icon: '🎉' },
+  referral: { points: 50, label: 'Friend referred', icon: '👥' },
+  badge_earned: { points: 10, label: 'Badge earned', icon: '🏅' },
+  daily_login: { points: 2, label: 'Daily login', icon: '📅' },
+  profile_complete: { points: 20, label: 'Profile complete', icon: '👤' },
+} as const;
+
+// Drink categories for filtering
+export const DRINK_CATEGORIES = {
+  beer: { label: 'Beer', icon: '🍺' },
+  stout: { label: 'Stout', icon: '🖤' },
+  lager: { label: 'Lager', icon: '🍻' },
+  ale: { label: 'Ale', icon: '🍺' },
+  cider: { label: 'Cider', icon: '🍎' },
+  spirit: { label: 'Spirits', icon: '🥃' },
+  cocktail: { label: 'Cocktails', icon: '🍸' },
+  wine: { label: 'Wine', icon: '🍷' },
+  soft_drink: { label: 'Non-Alcoholic', icon: '🥤' },
+  other: { label: 'Other', icon: '🍹' },
+} as const;

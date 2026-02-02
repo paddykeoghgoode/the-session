@@ -23,7 +23,7 @@ import PriceHistoryGraph from '@/components/PriceHistoryGraph';
 import ReportButton from '@/components/ReportButton';
 import AdminDealManager from '@/components/AdminDealManager';
 import StructuredData from '@/components/StructuredData';
-import { formatDate, getGoogleMapsUrl, getGoogleMapsDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
+import { formatDate, getMapUrl, getDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
 export const revalidate = 60;
@@ -361,7 +361,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               size="md"
             />
             <a
-              href={getGoogleMapsUrl(pub)}
+              href={getMapUrl(pub)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-stout-700 hover:bg-stout-600 text-cream-100 px-4 py-2 rounded-lg transition-colors"
@@ -373,7 +373,7 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
               View on Map
             </a>
             <a
-              href={getGoogleMapsDirectionsUrl(pub)}
+              href={getDirectionsUrl(pub)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-irish-green-600 hover:bg-irish-green-700 text-white px-4 py-2 rounded-lg transition-colors"

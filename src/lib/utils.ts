@@ -37,6 +37,30 @@ export function formatRelativeTime(dateString: string): string {
   return formatDate(dateString);
 }
 
+// OpenStreetMap URLs (free, no API key needed)
+export function getOpenStreetMapUrl(pub: { latitude?: number | null; longitude?: number | null; address: string }): string {
+  if (pub.latitude !== null && pub.latitude !== undefined && pub.longitude !== null && pub.longitude !== undefined) {
+    return `https://www.openstreetmap.org/?mlat=${pub.latitude}&mlon=${pub.longitude}#map=17/${pub.latitude}/${pub.longitude}`;
+  }
+  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(pub.address + ', Dublin, Ireland')}`;
+}
+
+export function getOpenStreetMapDirectionsUrl(
+  pub: { latitude?: number | null; longitude?: number | null; address: string },
+  userLocation?: { lat: number; lng: number }
+): string {
+  // OSRM routing via openrouteservice or GraphHopper
+  if (pub.latitude !== null && pub.latitude !== undefined && pub.longitude !== null && pub.longitude !== undefined) {
+    if (userLocation) {
+      // Use GraphHopper for directions (free tier available)
+      return `https://graphhopper.com/maps/?point=${userLocation.lat},${userLocation.lng}&point=${pub.latitude},${pub.longitude}&locale=en&profile=foot`;
+    }
+    return `https://www.openstreetmap.org/directions?to=${pub.latitude},${pub.longitude}#map=15/${pub.latitude}/${pub.longitude}`;
+  }
+  return `https://www.openstreetmap.org/directions?to=${encodeURIComponent(pub.address + ', Dublin, Ireland')}`;
+}
+
+// Google Maps URLs (kept for compatibility if API key is available)
 export function getGoogleMapsUrl(pub: { latitude?: number | null; longitude?: number | null; address: string }): string {
   if (pub.latitude !== null && pub.latitude !== undefined && pub.longitude !== null && pub.longitude !== undefined) {
     return `https://www.google.com/maps/search/?api=1&query=${pub.latitude},${pub.longitude}`;
@@ -49,6 +73,18 @@ export function getGoogleMapsDirectionsUrl(pub: { latitude?: number | null; long
     return `https://www.google.com/maps/dir/?api=1&destination=${pub.latitude},${pub.longitude}`;
   }
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pub.address + ', Dublin, Ireland')}`;
+}
+
+// Generic map URL that prefers OpenStreetMap
+export function getMapUrl(pub: { latitude?: number | null; longitude?: number | null; address: string }): string {
+  return getOpenStreetMapUrl(pub);
+}
+
+export function getDirectionsUrl(
+  pub: { latitude?: number | null; longitude?: number | null; address: string },
+  userLocation?: { lat: number; lng: number }
+): string {
+  return getOpenStreetMapDirectionsUrl(pub, userLocation);
 }
 
 export function calculateAverageRating(

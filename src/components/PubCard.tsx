@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import StarRating from './StarRating';
-import { formatPrice, getGoogleMapsUrl } from '@/lib/utils';
+import { formatPrice, getMapUrl } from '@/lib/utils';
 import type { Pub } from '@/types';
 
 interface PubCardProps {
@@ -80,11 +80,11 @@ export default function PubCard({ pub }: PubCardProps) {
             View Prices
           </Link>
           <a
-            href={getGoogleMapsUrl(pub)}
+            href={getMapUrl(pub)}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-stout-700 hover:bg-stout-600 text-cream-100 text-sm py-2 px-3 rounded transition-colors"
-            title="Open in Google Maps"
+            title="Open in Map"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
