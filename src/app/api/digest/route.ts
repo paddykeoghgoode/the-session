@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { generateDigestContent, type DigestData } from '@/lib/digest';
+import { generateDigestContent } from '@/lib/digest';
 
-// Use service role key for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Create admin client lazily to avoid build-time issues
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  return createClient(url, serviceKey);
+}
 
 // This endpoint is called by a cron job to generate weekly digests
 // You would need to set up a cron service (Vercel Cron, GitHub Actions, etc.)
@@ -20,6 +26,8 @@ export async function POST(request: Request) {
     if (expectedKey && authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Get all users who have opted in to weekly digest
     const { data: preferences, error: prefError } = await supabaseAdmin
@@ -155,6 +163,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     // Get user's pending digest
     const { data: digest, error } = await supabaseAdmin
       .from('weekly_digest_queue')
