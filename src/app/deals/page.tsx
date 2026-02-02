@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { formatPrice, formatRelativeTime } from '@/lib/utils';
+import AdvertisingBanner from '@/components/AdvertisingBanner';
 
 export const revalidate = 60;
 
@@ -145,8 +146,13 @@ export default async function DealsPage() {
         </div>
       )}
 
+      {/* Advertising Banner */}
+      <div className="mt-12">
+        <AdvertisingBanner />
+      </div>
+
       {/* Info Section */}
-      <div className="mt-12 bg-stout-800 rounded-lg border border-stout-700 p-6">
+      <div className="mt-8 bg-stout-800 rounded-lg border border-stout-700 p-6">
         <h2 className="text-lg font-semibold text-cream-100 mb-3">About Deals</h2>
         <p className="text-stout-400 text-sm">
           Deals are submitted by users and may have specific times or conditions.
