@@ -386,3 +386,215 @@ export interface ContributorStats {
   photos_this_month: number;
   total_contributions: number;
 }
+
+// ============================================
+// USER ENGAGEMENT FEATURES
+// ============================================
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  favorite_drinks: number[];
+  home_latitude: number | null;
+  home_longitude: number | null;
+  default_radius_km: number;
+  email_weekly_digest: boolean;
+  email_price_alerts: boolean;
+  email_deal_alerts: boolean;
+  push_enabled: boolean;
+  preferred_vibes: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CheckIn {
+  id: string;
+  user_id: string;
+  pub_id: string;
+  verified_price_id: string | null;
+  photo_path: string | null;
+  photo_verified: boolean;
+  notes: string | null;
+  is_verified: boolean;
+  verified_at: string | null;
+  check_in_latitude: number | null;
+  check_in_longitude: number | null;
+  location_verified: boolean;
+  created_at: string;
+  // Joined fields
+  pub?: Pub;
+  profile?: Profile;
+}
+
+export interface PubStreak {
+  id: string;
+  user_id: string;
+  pub_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_check_in_date: string;
+  streak_started_at: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  pub?: Pub;
+}
+
+export interface PriceAlert {
+  id: string;
+  user_id: string;
+  drink_id: number | null;
+  max_price: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  radius_km: number;
+  pub_id: string | null;
+  is_active: boolean;
+  last_triggered_at: string | null;
+  created_at: string;
+  // Joined fields
+  drink?: Drink;
+  pub?: Pub;
+}
+
+export interface DealAlert {
+  id: string;
+  user_id: string;
+  price_id: string;
+  pub_id: string;
+  alert_type: 'new_deal' | 'price_drop' | 'verified_price';
+  is_read: boolean;
+  is_sent: boolean;
+  created_at: string;
+  // Joined fields
+  price?: Price;
+  pub?: Pub;
+}
+
+export interface PubCrawl {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  start_latitude: number | null;
+  start_longitude: number | null;
+  is_public: boolean;
+  estimated_duration_mins: number | null;
+  total_distance_km: number | null;
+  status: 'draft' | 'planned' | 'in_progress' | 'completed';
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  stops?: PubCrawlStop[];
+  profile?: Profile;
+}
+
+export interface PubCrawlStop {
+  id: string;
+  crawl_id: string;
+  pub_id: string;
+  stop_order: number;
+  planned_drink_id: number | null;
+  estimated_spend: number | null;
+  notes: string | null;
+  visited: boolean;
+  visited_at: string | null;
+  actual_spend: number | null;
+  created_at: string;
+  // Joined fields
+  pub?: Pub;
+  drink?: Drink;
+}
+
+export interface PubVibe {
+  id: string;
+  pub_id: string;
+  user_id: string | null;
+  vibe: string;
+  vote_count: number;
+  created_at: string;
+}
+
+export interface VibeOption {
+  id: number;
+  name: string;
+  category: 'atmosphere' | 'crowd' | 'style' | 'occasion';
+  icon: string | null;
+  is_active: boolean;
+}
+
+export interface PubVibeVote {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  vibe: string;
+  vote: boolean;
+  created_at: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_type: string;
+  badge_level: number;
+  pub_id: string | null;
+  earned_at: string;
+  expires_at: string | null;
+  metadata: Record<string, unknown>;
+  // Joined fields
+  pub?: Pub;
+  badge_info?: BadgeType;
+}
+
+export interface BadgeType {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  icon: string | null;
+  category: 'contribution' | 'streak' | 'expertise' | 'special';
+  is_active: boolean;
+}
+
+export interface PubSimilarity {
+  id: string;
+  pub_id: string;
+  similar_pub_id: string;
+  similarity_score: number;
+  shared_amenities: string[];
+  shared_vibes: string[];
+  similar_price_range: boolean;
+  similar_ratings: boolean;
+  calculated_at: string;
+  // Joined fields
+  similar_pub?: Pub;
+}
+
+// Vibe categories for UI grouping
+export const VIBE_CATEGORIES = {
+  atmosphere: { label: 'Atmosphere', vibes: ['cozy', 'lively', 'quiet', 'romantic', 'casual', 'upscale'] },
+  crowd: { label: 'Crowd', vibes: ['locals', 'tourists', 'students', 'professionals', 'mixed-age', 'young-crowd'] },
+  style: { label: 'Style', vibes: ['traditional', 'modern', 'hipster', 'sports-bar', 'cocktail-bar', 'dive-bar'] },
+  occasion: { label: 'Good For', vibes: ['first-date', 'catch-up', 'celebration', 'work-drinks', 'solo-drink', 'big-group'] },
+} as const;
+
+export const VIBE_ICONS: Record<string, string> = {
+  cozy: '🔥', lively: '🎉', quiet: '🤫', romantic: '💕', casual: '😎', upscale: '✨',
+  locals: '🏠', tourists: '🧳', students: '📚', professionals: '💼', 'mixed-age': '👥', 'young-crowd': '🎓',
+  traditional: '🍀', modern: '🆕', hipster: '🧔', 'sports-bar': '📺', 'cocktail-bar': '🍸', 'dive-bar': '🍺',
+  'first-date': '💝', 'catch-up': '☕', celebration: '🎊', 'work-drinks': '🤝', 'solo-drink': '🧘', 'big-group': '👨‍👩‍👧‍👦',
+};
+
+export const BADGE_ICONS: Record<string, string> = {
+  verified_this_week: '✓',
+  local_expert: '🏆',
+  pub_regular: '🍺',
+  streak_7: '🔥',
+  streak_30: '⚡',
+  price_hunter: '🎯',
+  photo_pro: '📸',
+  early_adopter: '🌟',
+  crawl_master: '🗺️',
+};
