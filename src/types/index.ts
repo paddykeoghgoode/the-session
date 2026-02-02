@@ -139,11 +139,19 @@ export interface Profile {
   id: string;
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   is_verified_local: boolean;
   is_trusted: boolean;
   is_admin: boolean;
   total_contributions: number;
   uploads_today: number;
+  // Points fields
+  total_points: number;
+  points_this_month: number;
+  current_rank: number | null;
+  // Referral
+  referral_code: string | null;
+  referred_by: string | null;
   created_at: string;
 }
 
@@ -598,3 +606,180 @@ export const BADGE_ICONS: Record<string, string> = {
   early_adopter: '🌟',
   crawl_master: '🗺️',
 };
+
+// ============================================
+// PUB OWNERSHIP & GAMIFICATION
+// ============================================
+
+export interface PubOwnershipClaim {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  business_email: string;
+  business_name: string | null;
+  role: 'owner' | 'manager' | 'staff';
+  verification_code: string | null;
+  verification_sent_at: string | null;
+  status: 'pending' | 'email_sent' | 'verified' | 'approved' | 'rejected';
+  verified_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  pub?: Pub;
+}
+
+export interface PubOwner {
+  id: string;
+  pub_id: string;
+  user_id: string;
+  role: 'owner' | 'manager' | 'staff';
+  can_edit_info: boolean;
+  can_add_prices: boolean;
+  can_add_deals: boolean;
+  can_add_events: boolean;
+  can_respond_reviews: boolean;
+  is_active: boolean;
+  created_at: string;
+  // Joined
+  pub?: Pub;
+  profile?: Profile;
+}
+
+export interface UserPoints {
+  id: string;
+  user_id: string;
+  points: number;
+  action_type: string;
+  reference_type: string | null;
+  reference_id: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+export interface PointsConfig {
+  action_type: string;
+  points: number;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface MonthlyLeaderboard {
+  id: string;
+  year: number;
+  month: number;
+  user_id: string;
+  total_points: number;
+  prices_submitted: number;
+  reviews_submitted: number;
+  photos_submitted: number;
+  check_ins: number;
+  rank: number | null;
+  prize_won: string | null;
+  prize_claimed: boolean;
+  created_at: string;
+  // Joined
+  profile?: Profile;
+}
+
+export interface DrinkSuggestion {
+  id: string;
+  user_id: string | null;
+  drink_name: string;
+  drink_category: 'beer' | 'cider' | 'stout' | 'lager' | 'ale' | 'spirit' | 'cocktail' | 'wine' | 'soft_drink' | 'other';
+  brand: string | null;
+  description: string | null;
+  base_spirit: string | null;
+  mixer: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'duplicate';
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
+  created_drink_id: number | null;
+  votes: number;
+  created_at: string;
+  // Joined
+  profile?: Profile;
+}
+
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  referral_code: string;
+  status: 'pending' | 'completed' | 'rewarded';
+  completed_at: string | null;
+  rewarded_at: string | null;
+  created_at: string;
+}
+
+export interface AdInquiry {
+  id: string;
+  business_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string | null;
+  ad_type: 'featured_deal' | 'sponsored_listing' | 'banner_ad' | 'pub_promotion' | 'event_promotion';
+  message: string | null;
+  budget_range: string | null;
+  pub_id: string | null;
+  status: 'new' | 'contacted' | 'negotiating' | 'active' | 'completed' | 'declined';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeaturedContent {
+  id: string;
+  content_type: 'pub' | 'deal' | 'event' | 'banner';
+  pub_id: string | null;
+  price_id: string | null;
+  title: string | null;
+  description: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  placement: 'deals_page' | 'homepage' | 'search_results' | 'pub_page' | 'leaderboard';
+  priority: number;
+  start_date: string;
+  end_date: string;
+  impressions: number;
+  clicks: number;
+  is_active: boolean;
+  created_at: string;
+  // Joined
+  pub?: Pub;
+}
+
+// Points action types
+export const POINTS_ACTIONS = {
+  price_submit: { points: 10, label: 'Price submitted', icon: '💰' },
+  price_verified: { points: 5, label: 'Price verified', icon: '✓' },
+  review_submit: { points: 15, label: 'Review submitted', icon: '⭐' },
+  review_helpful: { points: 3, label: 'Helpful review', icon: '👍' },
+  photo_submit: { points: 5, label: 'Photo uploaded', icon: '📷' },
+  photo_approved: { points: 10, label: 'Photo approved', icon: '✅' },
+  check_in: { points: 5, label: 'Checked in', icon: '📍' },
+  check_in_verified: { points: 10, label: 'Verified check-in', icon: '🎯' },
+  first_price_pub: { points: 25, label: 'First at pub!', icon: '🏆' },
+  streak_bonus: { points: 20, label: 'Streak bonus', icon: '🔥' },
+  deal_found: { points: 15, label: 'Deal found', icon: '🎉' },
+  referral: { points: 50, label: 'Friend referred', icon: '👥' },
+  badge_earned: { points: 10, label: 'Badge earned', icon: '🏅' },
+  daily_login: { points: 2, label: 'Daily login', icon: '📅' },
+  profile_complete: { points: 20, label: 'Profile complete', icon: '👤' },
+} as const;
+
+// Drink categories for filtering
+export const DRINK_CATEGORIES = {
+  beer: { label: 'Beer', icon: '🍺' },
+  stout: { label: 'Stout', icon: '🖤' },
+  lager: { label: 'Lager', icon: '🍻' },
+  ale: { label: 'Ale', icon: '🍺' },
+  cider: { label: 'Cider', icon: '🍎' },
+  spirit: { label: 'Spirits', icon: '🥃' },
+  cocktail: { label: 'Cocktails', icon: '🍸' },
+  wine: { label: 'Wine', icon: '🍷' },
+  soft_drink: { label: 'Non-Alcoholic', icon: '🥤' },
+  other: { label: 'Other', icon: '🍹' },
+} as const;
