@@ -85,6 +85,11 @@ CREATE INDEX IF NOT EXISTS idx_pub_likes_pub_id ON pub_likes(pub_id);
 -- Friend Relationships
 ALTER TABLE friend_relationships ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own friend relationships" ON friend_relationships;
+DROP POLICY IF EXISTS "Users can create friend requests" ON friend_relationships;
+DROP POLICY IF EXISTS "Users can update friend relationships they're part of" ON friend_relationships;
+DROP POLICY IF EXISTS "Users can delete their own friend relationships" ON friend_relationships;
+
 CREATE POLICY "Users can view their own friend relationships" ON friend_relationships
   FOR SELECT USING (auth.uid() = user_id OR auth.uid() = friend_id);
 
@@ -99,6 +104,11 @@ CREATE POLICY "Users can delete their own friend relationships" ON friend_relati
 
 -- Pub Crawls
 ALTER TABLE pub_crawls ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public crawls are viewable by all" ON pub_crawls;
+DROP POLICY IF EXISTS "Users can create crawls" ON pub_crawls;
+DROP POLICY IF EXISTS "Creators can update their crawls" ON pub_crawls;
+DROP POLICY IF EXISTS "Creators can delete their crawls" ON pub_crawls;
 
 CREATE POLICY "Public crawls are viewable by all" ON pub_crawls
   FOR SELECT USING (
@@ -122,6 +132,9 @@ CREATE POLICY "Creators can delete their crawls" ON pub_crawls
 
 -- Pub Crawl Stops
 ALTER TABLE pub_crawl_stops ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Crawl stops are viewable with crawl" ON pub_crawl_stops;
+DROP POLICY IF EXISTS "Crawl creators can manage stops" ON pub_crawl_stops;
 
 CREATE POLICY "Crawl stops are viewable with crawl" ON pub_crawl_stops
   FOR SELECT USING (EXISTS (
@@ -147,6 +160,11 @@ CREATE POLICY "Crawl creators can manage stops" ON pub_crawl_stops
 
 -- Pub Crawl Participants
 ALTER TABLE pub_crawl_participants ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Participants are viewable with crawl" ON pub_crawl_participants;
+DROP POLICY IF EXISTS "Crawl creators can invite participants" ON pub_crawl_participants;
+DROP POLICY IF EXISTS "Participants can update their own status" ON pub_crawl_participants;
+DROP POLICY IF EXISTS "Creators and participants can remove participation" ON pub_crawl_participants;
 
 CREATE POLICY "Participants are viewable with crawl" ON pub_crawl_participants
   FOR SELECT USING (EXISTS (
@@ -181,6 +199,10 @@ CREATE POLICY "Creators and participants can remove participation" ON pub_crawl_
 
 -- Pub Likes
 ALTER TABLE pub_likes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Pub likes are viewable by all" ON pub_likes;
+DROP POLICY IF EXISTS "Users can like pubs" ON pub_likes;
+DROP POLICY IF EXISTS "Users can unlike pubs" ON pub_likes;
 
 CREATE POLICY "Pub likes are viewable by all" ON pub_likes
   FOR SELECT USING (true);
