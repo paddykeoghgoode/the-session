@@ -88,5 +88,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // Set cache control headers to prevent serving stale auth state
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+
   return response;
 }

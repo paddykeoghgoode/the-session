@@ -27,8 +27,9 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      router.push('/');
+      // Refresh server cache BEFORE navigating to clear cached auth state
       router.refresh();
+      router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {
