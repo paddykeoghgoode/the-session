@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-stout-950 text-cream-100`}>
+        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''} />
         {/* Skip to main content link for accessibility */}
         <a
           href="#main-content"
@@ -53,6 +55,7 @@ export default function RootLayout({
                 </div>
               </div>
               <div className="flex gap-6 text-sm text-stout-400">
+                <a href="/pubs/join" className="hover:text-cream-100 transition-colors font-medium text-irish-green-500">List Your Pub</a>
                 <a href="/about" className="hover:text-cream-100 transition-colors">About</a>
                 <a href="/contact" className="hover:text-cream-100 transition-colors">Contact</a>
                 <a href="/privacy" className="hover:text-cream-100 transition-colors">Privacy</a>

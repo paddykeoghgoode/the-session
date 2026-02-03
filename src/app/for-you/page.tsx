@@ -30,7 +30,7 @@ async function getUserBehavior(userId: string) {
     .eq('user_id', userId)
     .limit(100);
 
-  const visitedPubIds = [...new Set((checkIns || []).map((c) => c.pub_id))];
+  const visitedPubIds = Array.from(new Set((checkIns || []).map((c) => c.pub_id)));
 
   // Get liked pubs
   const { data: likes } = await supabase
