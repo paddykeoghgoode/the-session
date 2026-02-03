@@ -106,7 +106,7 @@ CREATE POLICY "Public crawls are viewable by all" ON pub_crawls
   );
 
 CREATE POLICY "Users can create crawls" ON pub_crawls
-  FOR INSERT WITH CHECK (pub_crawls.creator_id = auth.uid());
+  FOR INSERT WITH CHECK (creator_id = auth.uid());
 
 CREATE POLICY "Creators can update their crawls" ON pub_crawls
   FOR UPDATE USING (pub_crawls.creator_id = auth.uid());
@@ -156,7 +156,7 @@ CREATE POLICY "Participants are viewable with crawl" ON pub_crawl_participants
 CREATE POLICY "Crawl creators can invite participants" ON pub_crawl_participants
   FOR INSERT WITH CHECK (EXISTS (
     SELECT 1 FROM pub_crawls
-    WHERE pub_crawls.id = pub_crawl_participants.crawl_id
+    WHERE pub_crawls.id = crawl_id
     AND pub_crawls.creator_id = auth.uid()
   ));
 
