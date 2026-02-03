@@ -80,17 +80,17 @@ async function getBuzzingPubs() {
     .from('check_ins')
     .select(`
       pub_id,
-      pub:pubs(*)
+      pubs(*)
     `)
     .gte('created_at', twoHoursAgo);
 
   if (!data) return [];
 
   // Count check-ins per pub
-  const pubCheckIns = data.reduce((acc: Record<string, { pub: Pub; count: number }>, item) => {
+  const pubCheckIns = data.reduce((acc: Record<string, { pub: Pub; count: number }>, item: any) => {
     const pubId = item.pub_id;
-    if (!acc[pubId] && item.pub) {
-      acc[pubId] = { pub: item.pub as Pub, count: 0 };
+    if (!acc[pubId] && item.pubs) {
+      acc[pubId] = { pub: item.pubs as Pub, count: 0 };
     }
     if (acc[pubId]) {
       acc[pubId].count++;
