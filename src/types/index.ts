@@ -783,3 +783,352 @@ export const DRINK_CATEGORIES = {
   soft_drink: { label: 'Non-Alcoholic', icon: '🥤' },
   other: { label: 'Other', icon: '🍹' },
 } as const;
+
+// ============================================
+// PRIZE & SPONSORSHIP SYSTEM
+// ============================================
+
+export interface LeaderboardPrize {
+  id: string;
+  month: number;
+  year: number;
+  rank: number; // 1 = 1st place, 2 = 2nd place, etc.
+  prize_type: 'bar_tab' | 'delivery_voucher' | 'merchandise' | 'cash' | 'other';
+  prize_value: number; // €50, €30, €20
+  prize_description: string;
+  sponsor_type: 'pub' | 'delivery_platform' | 'brewery' | 'other';
+  sponsor_id: string | null; // pub_id or null
+  sponsor_name: string;
+  sponsor_logo_url: string | null;
+  terms: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Sponsor {
+  id: string;
+  name: string;
+  type: 'pub' | 'delivery_platform' | 'brewery' | 'brand';
+  logo_url: string | null;
+  website_url: string | null;
+  description: string | null;
+  pub_id: string | null; // If sponsor is a pub
+  contact_email: string;
+  contact_name: string | null;
+  is_active: boolean;
+  sponsorship_level: 'bronze' | 'silver' | 'gold' | 'platinum';
+  monthly_contribution: number; // €50, €100, €200
+  benefits_received: string[]; // ["Featured on leaderboard", "Social media shoutouts"]
+  contract_start_date: string;
+  contract_end_date: string | null;
+  created_at: string;
+}
+
+export interface PrizeWinner {
+  id: string;
+  user_id: string;
+  prize_id: string;
+  month: number;
+  year: number;
+  rank: number;
+  points_earned: number;
+  claimed: boolean;
+  claimed_at: string | null;
+  voucher_code: string | null;
+  created_at: string;
+  // Joined fields
+  profile?: Profile;
+  prize?: LeaderboardPrize;
+}
+
+export const SPONSORSHIP_LEVELS = {
+  bronze: {
+    label: 'Bronze Sponsor',
+    monthlyFee: 50,
+    benefits: [
+      'Logo on leaderboard',
+      'Monthly social media mention',
+      '1 prize per month (€50 bar tab)',
+      'Featured in monthly newsletter',
+    ],
+  },
+  silver: {
+    label: 'Silver Sponsor',
+    monthlyFee: 100,
+    benefits: [
+      'Premium logo placement',
+      'Weekly social media mentions',
+      '2 prizes per month (€100 total)',
+      'Featured in "Tonight" feed',
+      'Homepage sponsor badge',
+    ],
+  },
+  gold: {
+    label: 'Gold Sponsor',
+    monthlyFee: 200,
+    benefits: [
+      'Top logo placement',
+      'Daily social media mentions',
+      '4 prizes per month (€200 total)',
+      'Featured in all communications',
+      'Custom partnership page',
+      'Analytics dashboard',
+    ],
+  },
+  platinum: {
+    label: 'Platinum Sponsor',
+    monthlyFee: 500,
+    benefits: [
+      'Exclusive top placement',
+      'Co-branded content',
+      '€500 monthly prize pool',
+      'Custom integration',
+      'Event sponsorship',
+      'Full analytics access',
+      'Quarterly strategy meetings',
+    ],
+  },
+} as const;
+
+// ============================================
+// SOCIAL FEATURES - FRIEND GRAPH
+// ============================================
+
+export interface FriendRelationship {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: 'pending' | 'accepted' | 'blocked';
+  created_at: string;
+  accepted_at: string | null;
+  // Joined fields
+  friend?: Profile;
+}
+
+export interface PubCrawlParticipant {
+  id: string;
+  crawl_id: string;
+  user_id: string;
+  invited_by: string | null;
+  status: 'invited' | 'accepted' | 'declined' | 'completed';
+  joined_at: string | null;
+  created_at: string;
+  // Joined fields
+  profile?: Profile;
+}
+
+export interface PubLike {
+  id: string;
+  user_id: string;
+  pub_id: string;
+  created_at: string;
+}
+
+// ============================================
+// INTENT-BASED DISCOVERY
+// ============================================
+
+export type PubIntent =
+  | 'first-date'
+  | 'catch-up-with-friends'
+  | 'watch-sports'
+  | 'birthday-celebration'
+  | 'quick-pint-after-work'
+  | 'sunday-session'
+  | 'sunny-day'
+  | 'craft-beer-tasting'
+  | 'tourist-showing-dublin'
+  | 'live-trad-music'
+  | 'cheap-pints'
+  | 'late-night'
+  | 'pub-food';
+
+export interface IntentWeights {
+  // Amenities
+  food?: number;
+  outdoor?: number;
+  sports?: number;
+  liveMusic?: number;
+  tradMusic?: number;
+  beerGarden?: number;
+  craftBeer?: number;
+  latebar?: number;
+
+  // Vibes
+  romantic?: number;
+  quiet?: number;
+  lively?: number;
+  cozy?: number;
+  upscale?: number;
+  traditional?: number;
+  casual?: number;
+
+  // Other factors
+  price?: number; // Lower is better
+  distance?: number; // Closer is better
+  rating?: number; // Higher is better
+}
+
+export const PUB_INTENTS: Record<PubIntent, { label: string; icon: string; weights: IntentWeights; description: string }> = {
+  'first-date': {
+    label: 'Romantic Date Spot',
+    icon: '💑',
+    description: 'Quiet, romantic atmosphere perfect for conversation',
+    weights: { romantic: 3, quiet: 2, upscale: 1, food: 2 }
+  },
+  'catch-up-with-friends': {
+    label: 'Catch Up with Friends',
+    icon: '☕',
+    description: 'Cozy spots great for chatting',
+    weights: { cozy: 2, food: 2, casual: 1 }
+  },
+  'watch-sports': {
+    label: 'Watch the Match',
+    icon: '🏈',
+    description: 'Best sports bars with big screens',
+    weights: { sports: 3, lively: 2, food: 1 }
+  },
+  'birthday-celebration': {
+    label: 'Birthday Party',
+    icon: '🎉',
+    description: 'Lively venues for celebrations',
+    weights: { lively: 3, food: 1, latebar: 1 }
+  },
+  'quick-pint-after-work': {
+    label: 'Quick After-Work Pint',
+    icon: '🍺',
+    description: 'Nearby, no-fuss pubs',
+    weights: { distance: 3, price: 2, casual: 1 }
+  },
+  'sunday-session': {
+    label: 'Sunday Session',
+    icon: '🎻',
+    description: 'Traditional pubs with trad music',
+    weights: { tradMusic: 3, traditional: 2, food: 2 }
+  },
+  'sunny-day': {
+    label: 'Beer Garden (Sunny Day)',
+    icon: '🌞',
+    description: 'Best outdoor seating and beer gardens',
+    weights: { beerGarden: 3, outdoor: 2 }
+  },
+  'craft-beer-tasting': {
+    label: 'Craft Beer Selection',
+    icon: '🍻',
+    description: 'Best craft beer selection',
+    weights: { craftBeer: 3, upscale: 1 }
+  },
+  'tourist-showing-dublin': {
+    label: 'Show Tourists Around',
+    icon: '🧳',
+    description: 'Authentic traditional Irish pubs',
+    weights: { traditional: 3, food: 2, tradMusic: 1 }
+  },
+  'live-trad-music': {
+    label: 'Live Trad Music',
+    icon: '🎸',
+    description: 'Pubs with live traditional music',
+    weights: { tradMusic: 3, liveMusic: 2, traditional: 2 }
+  },
+  'cheap-pints': {
+    label: 'Cheapest Pints',
+    icon: '💰',
+    description: 'Best value for money',
+    weights: { price: 3, distance: 1 }
+  },
+  'late-night': {
+    label: 'Late Night Drinks',
+    icon: '🌙',
+    description: 'Open late, lively atmosphere',
+    weights: { latebar: 3, lively: 2 }
+  },
+  'pub-food': {
+    label: 'Great Pub Food',
+    icon: '🍔',
+    description: 'Best pub grub in Dublin',
+    weights: { food: 3, rating: 2 }
+  },
+};
+
+// ============================================
+// TONIGHT FEED / LIVE EVENTS
+// ============================================
+
+export interface SportsMatch {
+  id: string;
+  competition: string; // '6 Nations', 'Premier League', etc.
+  home_team: string;
+  away_team: string;
+  match_time: string;
+  is_big_match: boolean; // Ireland games, major finals, etc.
+  created_at: string;
+}
+
+export interface PubShowingMatch {
+  id: string;
+  pub_id: string;
+  match_id: string;
+  booking_required: boolean;
+  booking_url: string | null;
+  sound_on: boolean;
+  screen_count: number | null;
+  created_at: string;
+  // Joined fields
+  pub?: Pub;
+  match?: SportsMatch;
+}
+
+export interface TonightFeedItem {
+  type: 'event' | 'deal' | 'match' | 'buzz';
+  id: string;
+  title: string;
+  subtitle: string;
+  time: string | null;
+  pubCount?: number;
+  urgency: 'high' | 'medium' | 'low'; // For sorting
+  icon: string;
+  link: string;
+  data?: PubEvent | Price | SportsMatch | Pub;
+}
+
+// ============================================
+// PUB OWNER DASHBOARD ANALYTICS
+// ============================================
+
+export interface PubAnalytics {
+  pub_id: string;
+  date: string;
+  views: number;
+  likes: number;
+  check_ins: number;
+  price_submissions: number;
+  review_submissions: number;
+  photo_uploads: number;
+  deal_clicks: number;
+  directions_clicks: number;
+}
+
+export interface PubOwnerDashboardStats {
+  pub: Pub;
+  totalViews: number;
+  totalLikes: number;
+  totalCheckIns: number;
+  reviewCount: number;
+  avgRating: number;
+  priceAccuracy: number; // % verified prices
+  recentReviews: Review[];
+  competitorPrices: { pub: Pub; price: number }[];
+  trafficSources: { source: string; count: number }[];
+  popularSearchTerms: { term: string; count: number }[];
+}
+
+// ============================================
+// PERSONALIZATION
+// ============================================
+
+export interface PersonalizedRecommendation {
+  pub: Pub;
+  score: number;
+  reasons: string[]; // Why we recommend this
+  matchedPreferences: string[];
+}

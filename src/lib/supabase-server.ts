@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { unstable_noStore as noStore } from 'next/cache';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -30,12 +31,16 @@ export async function createServerSupabaseClient() {
 }
 
 export async function getSession() {
+  // Prevent caching of auth state to avoid stale session data
+  noStore();
   const supabase = await createServerSupabaseClient();
   const { data: { session } } = await supabase.auth.getSession();
   return session;
 }
 
 export async function getUser() {
+  // Prevent caching of auth state to avoid stale user data
+  noStore();
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
