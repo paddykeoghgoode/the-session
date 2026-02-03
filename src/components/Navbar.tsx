@@ -130,11 +130,11 @@ export default function Navbar() {
 
   const navLinks = [
     { href: '/', label: 'Home' },
+    { href: '/tonight', label: 'Tonight' },
+    { href: '/for-you', label: 'For You' },
     { href: '/nearby', label: 'Near Me' },
     { href: '/pubs', label: 'Pubs' },
     { href: '/deals', label: 'Deals' },
-    { href: '/leaderboard', label: 'Leaderboard' },
-    { href: '/map', label: 'Map' },
   ];
 
   return (
