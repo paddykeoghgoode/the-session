@@ -8,6 +8,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://thesession.ie'),
   title: 'The Session - Find the Best Pint Prices in Dublin',
   description: 'Crowdsourced pint prices, pub reviews, and deals across Dublin. Find the cheapest Guinness, Heineken, and ciders near you.',
   keywords: ['Dublin pubs', 'pint prices', 'Guinness', 'pub reviews', 'Dublin nightlife', 'cheap pints'],
@@ -15,6 +16,13 @@ export const metadata: Metadata = {
     title: 'The Session - Find the Best Pint Prices in Dublin',
     description: 'Crowdsourced pint prices, pub reviews, and deals across Dublin.',
     type: 'website',
+    siteName: 'The Session',
+    locale: 'en_IE',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Session - Find the Best Pint Prices in Dublin',
+    description: 'Crowdsourced pint prices, pub reviews, and deals across Dublin.',
   },
 };
 

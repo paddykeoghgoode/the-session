@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getRateLimitIdentifier, createRateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit-server';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -31,6 +32,14 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limiting: 100 requests per minute
+  const rateLimitId = getRateLimitIdentifier(request, user.id);
+  const rateLimitResult = checkRateLimit(rateLimitId, RATE_LIMITS.GENERAL);
+
+  if (!rateLimitResult.success) {
+    return createRateLimitResponse(rateLimitResult);
   }
 
   try {
