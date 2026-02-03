@@ -785,6 +785,112 @@ export const DRINK_CATEGORIES = {
 } as const;
 
 // ============================================
+// PRIZE & SPONSORSHIP SYSTEM
+// ============================================
+
+export interface LeaderboardPrize {
+  id: string;
+  month: number;
+  year: number;
+  rank: number; // 1 = 1st place, 2 = 2nd place, etc.
+  prize_type: 'bar_tab' | 'delivery_voucher' | 'merchandise' | 'cash' | 'other';
+  prize_value: number; // €50, €30, €20
+  prize_description: string;
+  sponsor_type: 'pub' | 'delivery_platform' | 'brewery' | 'other';
+  sponsor_id: string | null; // pub_id or null
+  sponsor_name: string;
+  sponsor_logo_url: string | null;
+  terms: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Sponsor {
+  id: string;
+  name: string;
+  type: 'pub' | 'delivery_platform' | 'brewery' | 'brand';
+  logo_url: string | null;
+  website_url: string | null;
+  description: string | null;
+  pub_id: string | null; // If sponsor is a pub
+  contact_email: string;
+  contact_name: string | null;
+  is_active: boolean;
+  sponsorship_level: 'bronze' | 'silver' | 'gold' | 'platinum';
+  monthly_contribution: number; // €50, €100, €200
+  benefits_received: string[]; // ["Featured on leaderboard", "Social media shoutouts"]
+  contract_start_date: string;
+  contract_end_date: string | null;
+  created_at: string;
+}
+
+export interface PrizeWinner {
+  id: string;
+  user_id: string;
+  prize_id: string;
+  month: number;
+  year: number;
+  rank: number;
+  points_earned: number;
+  claimed: boolean;
+  claimed_at: string | null;
+  voucher_code: string | null;
+  created_at: string;
+  // Joined fields
+  profile?: Profile;
+  prize?: LeaderboardPrize;
+}
+
+export const SPONSORSHIP_LEVELS = {
+  bronze: {
+    label: 'Bronze Sponsor',
+    monthlyFee: 50,
+    benefits: [
+      'Logo on leaderboard',
+      'Monthly social media mention',
+      '1 prize per month (€50 bar tab)',
+      'Featured in monthly newsletter',
+    ],
+  },
+  silver: {
+    label: 'Silver Sponsor',
+    monthlyFee: 100,
+    benefits: [
+      'Premium logo placement',
+      'Weekly social media mentions',
+      '2 prizes per month (€100 total)',
+      'Featured in "Tonight" feed',
+      'Homepage sponsor badge',
+    ],
+  },
+  gold: {
+    label: 'Gold Sponsor',
+    monthlyFee: 200,
+    benefits: [
+      'Top logo placement',
+      'Daily social media mentions',
+      '4 prizes per month (€200 total)',
+      'Featured in all communications',
+      'Custom partnership page',
+      'Analytics dashboard',
+    ],
+  },
+  platinum: {
+    label: 'Platinum Sponsor',
+    monthlyFee: 500,
+    benefits: [
+      'Exclusive top placement',
+      'Co-branded content',
+      '€500 monthly prize pool',
+      'Custom integration',
+      'Event sponsorship',
+      'Full analytics access',
+      'Quarterly strategy meetings',
+    ],
+  },
+} as const;
+
+// ============================================
 // SOCIAL FEATURES - FRIEND GRAPH
 // ============================================
 
