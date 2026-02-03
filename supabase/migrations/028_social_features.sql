@@ -95,34 +95,48 @@ CREATE POLICY "Users can delete their own friend relationships" ON friend_relati
 ALTER TABLE pub_crawls ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public crawls are viewable by all" ON pub_crawls
-  FOR SELECT USING (is_public = true OR auth.uid() = creator_id OR EXISTS (
-    SELECT 1 FROM pub_crawl_participants WHERE crawl_id = pub_crawls.id AND user_id = auth.uid()
-  ));
+  FOR SELECT USING (
+    pub_crawls.is_public = true OR
+    pub_crawls.creator_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM pub_crawl_participants
+      WHERE pub_crawl_participants.crawl_id = pub_crawls.id
+      AND pub_crawl_participants.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can create crawls" ON pub_crawls
-  FOR INSERT WITH CHECK (auth.uid() = creator_id);
+  FOR INSERT WITH CHECK (pub_crawls.creator_id = auth.uid());
 
 CREATE POLICY "Creators can update their crawls" ON pub_crawls
-  FOR UPDATE USING (auth.uid() = creator_id);
+  FOR UPDATE USING (pub_crawls.creator_id = auth.uid());
 
 CREATE POLICY "Creators can delete their crawls" ON pub_crawls
-  FOR DELETE USING (auth.uid() = creator_id);
+  FOR DELETE USING (pub_crawls.creator_id = auth.uid());
 
 -- Pub Crawl Stops
 ALTER TABLE pub_crawl_stops ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Crawl stops are viewable with crawl" ON pub_crawl_stops
   FOR SELECT USING (EXISTS (
-    SELECT 1 FROM pub_crawls WHERE id = pub_crawl_stops.crawl_id AND (
-      is_public = true OR creator_id = auth.uid() OR EXISTS (
-        SELECT 1 FROM pub_crawl_participants WHERE crawl_id = pub_crawls.id AND user_id = auth.uid()
+    SELECT 1 FROM pub_crawls
+    WHERE pub_crawls.id = pub_crawl_stops.crawl_id
+    AND (
+      pub_crawls.is_public = true OR
+      pub_crawls.creator_id = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM pub_crawl_participants
+        WHERE pub_crawl_participants.crawl_id = pub_crawls.id
+        AND pub_crawl_participants.user_id = auth.uid()
       )
     )
   ));
 
 CREATE POLICY "Crawl creators can manage stops" ON pub_crawl_stops
   FOR ALL USING (EXISTS (
-    SELECT 1 FROM pub_crawls WHERE id = pub_crawl_stops.crawl_id AND creator_id = auth.uid()
+    SELECT 1 FROM pub_crawls
+    WHERE pub_crawls.id = pub_crawl_stops.crawl_id
+    AND pub_crawls.creator_id = auth.uid()
   ));
 
 -- Pub Crawl Participants
@@ -130,23 +144,34 @@ ALTER TABLE pub_crawl_participants ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Participants are viewable with crawl" ON pub_crawl_participants
   FOR SELECT USING (EXISTS (
-    SELECT 1 FROM pub_crawls WHERE id = pub_crawl_participants.crawl_id AND (
-      is_public = true OR creator_id = auth.uid() OR user_id = auth.uid()
+    SELECT 1 FROM pub_crawls
+    WHERE pub_crawls.id = pub_crawl_participants.crawl_id
+    AND (
+      pub_crawls.is_public = true OR
+      pub_crawls.creator_id = auth.uid() OR
+      pub_crawl_participants.user_id = auth.uid()
     )
   ));
 
 CREATE POLICY "Crawl creators can invite participants" ON pub_crawl_participants
   FOR INSERT WITH CHECK (EXISTS (
-    SELECT 1 FROM pub_crawls WHERE id = crawl_id AND creator_id = auth.uid()
+    SELECT 1 FROM pub_crawls
+    WHERE pub_crawls.id = pub_crawl_participants.crawl_id
+    AND pub_crawls.creator_id = auth.uid()
   ));
 
 CREATE POLICY "Participants can update their own status" ON pub_crawl_participants
-  FOR UPDATE USING (auth.uid() = user_id);
+  FOR UPDATE USING (pub_crawl_participants.user_id = auth.uid());
 
 CREATE POLICY "Creators and participants can remove participation" ON pub_crawl_participants
-  FOR DELETE USING (auth.uid() = user_id OR EXISTS (
-    SELECT 1 FROM pub_crawls WHERE id = crawl_id AND creator_id = auth.uid()
-  ));
+  FOR DELETE USING (
+    pub_crawl_participants.user_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM pub_crawls
+      WHERE pub_crawls.id = pub_crawl_participants.crawl_id
+      AND pub_crawls.creator_id = auth.uid()
+    )
+  );
 
 -- Pub Likes
 ALTER TABLE pub_likes ENABLE ROW LEVEL SECURITY;
