@@ -1,6 +1,12 @@
 -- Social Features: Friend Relationships and Pub Crawls
 -- Enables social networking features for users
 
+-- Drop old pub_crawls tables if they exist with wrong schema
+-- (In case they were created earlier with different structure)
+DROP TABLE IF EXISTS pub_crawl_participants CASCADE;
+DROP TABLE IF EXISTS pub_crawl_stops CASCADE;
+DROP TABLE IF EXISTS pub_crawls CASCADE;
+
 -- Friend Relationships Table
 CREATE TABLE IF NOT EXISTS friend_relationships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

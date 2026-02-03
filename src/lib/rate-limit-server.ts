@@ -41,7 +41,8 @@ export function checkRateLimit(
 
   // Periodically clean up old entries (1% chance per request)
   if (Math.random() < 0.01) {
-    for (const [key, value] of rateLimitMap.entries()) {
+    const entries = Array.from(rateLimitMap.entries());
+    for (const [key, value] of entries) {
       if (now > value.resetTime) {
         rateLimitMap.delete(key);
       }
