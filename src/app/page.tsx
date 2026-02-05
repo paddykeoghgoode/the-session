@@ -1,11 +1,43 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import PubCard from '@/components/PubCard';
 import StoutIndex from '@/components/StoutIndex';
 import { formatPrice } from '@/lib/utils';
 
 export const revalidate = 60; // Revalidate every minute
+
+export const metadata: Metadata = {
+  title: 'The Session - Find the Best Pint Prices in Dublin',
+  description: 'Discover the best pubs, compare pint prices, and find deals across Dublin. Crowdsourced reviews and prices from 5,000+ pub enthusiasts.',
+  keywords: ['Dublin pubs', 'pint prices', 'Guinness price', 'pub deals', 'Dublin nightlife', 'best pubs Dublin'],
+  openGraph: {
+    title: 'The Session - Find the Best Pint Prices in Dublin',
+    description: 'Discover the best pubs, compare pint prices, and find deals across Dublin.',
+    url: 'https://thesession.ie',
+    siteName: 'The Session',
+    images: [
+      {
+        url: 'https://thesession.ie/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'The Session - Dublin Pub Finder',
+      },
+    ],
+    locale: 'en_IE',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Session - Find the Best Pint Prices in Dublin',
+    description: 'Discover the best pubs, compare pint prices, and find deals across Dublin.',
+    images: ['https://thesession.ie/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://thesession.ie',
+  },
+};
 
 async function getTopDeals() {
   const supabase = await createServerSupabaseClient();
