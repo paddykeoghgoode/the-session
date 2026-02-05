@@ -5,6 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: (active: boolean) => JSX.Element;
+  highlight?: boolean;
+}
+
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,7 +32,7 @@ export default function MobileBottomNav() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       href: '/',
       label: 'Home',
