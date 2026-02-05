@@ -183,7 +183,7 @@ export default function MapContent({
           spiderfyOnMaxZoom={true}
           showCoverageOnHover={false}
           zoomToBoundsOnClick={true}
-          iconCreateFunction={(cluster) => {
+          iconCreateFunction={(cluster: any) => {
             const count = cluster.getChildCount();
             const size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
             return L.divIcon({
