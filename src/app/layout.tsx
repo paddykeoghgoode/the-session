@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import { ToastProvider } from '@/components/Toast';
-import FloatingActionButton from '@/components/FloatingActionButton';
+import QuickActionsFAB from '@/components/QuickActionsFAB';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import './globals.css';
 
@@ -79,8 +79,8 @@ export default function RootLayout({
           </div>
         </footer>
 
-          {/* Floating Action Button */}
-          <FloatingActionButton />
+          {/* Quick Actions FAB */}
+          <QuickActionsFAB />
 
           {/* Mobile Bottom Navigation */}
           <MobileBottomNav />
