@@ -3,6 +3,9 @@ import { Inter } from 'next/font/google';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import { ToastProvider } from '@/components/Toast';
+import FloatingActionButton from '@/components/FloatingActionButton';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -34,19 +37,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-stout-950 text-cream-100`}>
-        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''} />
-        {/* Skip to main content link for accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-irish-green-600 focus:text-white focus:rounded-lg focus:outline-none"
-        >
-          Skip to main content
-        </a>
-        <Navbar />
-        <main id="main-content" className="min-h-screen" role="main">
-          {children}
-        </main>
-        <footer className="bg-stout-900 border-t border-stout-700 py-8 mt-12" role="contentinfo">
+        <ToastProvider>
+          <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''} />
+          {/* Skip to main content link for accessibility */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-irish-green-600 focus:text-white focus:rounded-lg focus:outline-none"
+          >
+            Skip to main content
+          </a>
+          <Navbar />
+          <main id="main-content" className="min-h-screen pb-16 md:pb-0" role="main">
+            {children}
+          </main>
+          <footer className="bg-stout-900 border-t border-stout-700 py-8 mt-12 mb-16 md:mb-0" role="contentinfo">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="text-center md:text-left flex items-center gap-3">
@@ -74,6 +78,13 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+
+          {/* Floating Action Button */}
+          <FloatingActionButton />
+
+          {/* Mobile Bottom Navigation */}
+          <MobileBottomNav />
+        </ToastProvider>
       </body>
     </html>
   );
