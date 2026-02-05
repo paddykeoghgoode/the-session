@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      },
       colors: {
         // Guinness-inspired color palette
         'stout': {
@@ -33,9 +36,11 @@ const config: Config = {
           600: '#c9a87a',
         },
         'irish-green': {
+          100: '#d1fae5',
           500: '#169b62',
           600: '#128a56',
           700: '#0f7a4b',
+          800: '#0a5c35',
         },
       },
     },
