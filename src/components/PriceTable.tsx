@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice, formatRelativeTime } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
+import { VerifyTooltip } from './OnboardingTooltip';
 import type { Price, Drink } from '@/types';
 
 interface PriceTableProps {
@@ -298,37 +299,39 @@ export default function PriceTable({ prices, showPubName = false, userId, pubId,
 
                     {/* Voting buttons */}
                     {userId && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleVote(price.id, 'up')}
-                          className={`p-1 rounded transition-colors ${
-                            votingStates[price.id] === 'up'
-                              ? 'text-irish-green-500 bg-irish-green-500/20'
-                              : 'text-stout-400 hover:text-irish-green-500'
-                          }`}
-                          title="Confirm this price"
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                          </svg>
-                        </button>
-                        <span className="text-sm text-stout-400 min-w-[2rem] text-center">
-                          {price.upvotes - price.downvotes}
-                        </span>
-                        <button
-                          onClick={() => handleVote(price.id, 'down')}
-                          className={`p-1 rounded transition-colors ${
-                            votingStates[price.id] === 'down'
-                              ? 'text-red-500 bg-red-500/20'
-                              : 'text-stout-400 hover:text-red-500'
-                          }`}
-                          title="Report incorrect price"
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      </div>
+                      <VerifyTooltip>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleVote(price.id, 'up')}
+                            className={`p-1 rounded transition-colors ${
+                              votingStates[price.id] === 'up'
+                                ? 'text-irish-green-500 bg-irish-green-500/20'
+                                : 'text-stout-400 hover:text-irish-green-500'
+                            }`}
+                            title="Confirm this price"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <span className="text-sm text-stout-400 min-w-[2rem] text-center">
+                            {price.upvotes - price.downvotes}
+                          </span>
+                          <button
+                            onClick={() => handleVote(price.id, 'down')}
+                            className={`p-1 rounded transition-colors ${
+                              votingStates[price.id] === 'down'
+                                ? 'text-red-500 bg-red-500/20'
+                                : 'text-stout-400 hover:text-red-500'
+                            }`}
+                            title="Report incorrect price"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </VerifyTooltip>
                     )}
                   </div>
                 </div>

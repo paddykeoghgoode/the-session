@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateDigestContent } from '@/lib/digest';
+import { checkRateLimit } from '@/lib/rate-limit-server';
 
 // Create admin client lazily to avoid build-time issues
 function getSupabaseAdmin() {
@@ -19,12 +20,36 @@ function getSupabaseAdmin() {
 // to call this endpoint weekly
 export async function POST(request: Request) {
   try {
-    // Verify the request is authorized (use a secret key in production)
+    // Verify the request is authorized - secret key is REQUIRED
     const authHeader = request.headers.get('authorization');
     const expectedKey = process.env.CRON_SECRET_KEY;
 
-    if (expectedKey && authHeader !== `Bearer ${expectedKey}`) {
+    // SECURITY: Enforce secret key authentication
+    if (!expectedKey) {
+      console.error('CRON_SECRET_KEY not configured');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+
+    if (authHeader !== `Bearer ${expectedKey}`) {
+      console.warn('Unauthorized digest generation attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limit: Allow only 1 digest generation per hour
+    const rateLimitResult = checkRateLimit('digest-generation', {
+      limit: 1,
+      windowSeconds: 3600, // 1 hour
+    });
+
+    if (!rateLimitResult.success) {
+      console.warn('Digest generation rate limit exceeded');
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          resetTime: rateLimitResult.resetTime,
+        },
+        { status: 429 }
+      );
     }
 
     const supabaseAdmin = getSupabaseAdmin();

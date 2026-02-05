@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import PubCard from '@/components/PubCard';
+import { FilterTooltip } from '@/components/OnboardingTooltip';
 import { isOpenNow } from '@/lib/utils';
 import type { Pub } from '@/types';
 
@@ -194,19 +195,23 @@ export default async function PubsPage({
 
           <span className="text-stout-600 mx-2">|</span>
 
-          <span className="text-sm text-stout-400">Filter:</span>
-          <FilterButton label="Open Now" param="open" value="true" currentValue={params.open} />
-          <FilterButton label="Late Bar" param="latebar" value="true" currentValue={params.latebar} />
-          <FilterButton label="Food" param="food" value="true" currentValue={params.food} />
-          <FilterButton label="Live Music" param="music" value="true" currentValue={params.music} />
-          <FilterButton label="Trad Music" param="trad" value="true" currentValue={params.trad} />
-          <FilterButton label="Sports" param="sports" value="true" currentValue={params.sports} />
-          <FilterButton label="Outdoor" param="outdoor" value="true" currentValue={params.outdoor} />
-          <FilterButton label="Dog Friendly" param="dogfriendly" value="true" currentValue={params.dogfriendly} />
-          <FilterButton label="Snug" param="snug" value="true" currentValue={params.snug} />
-          <FilterButton label="Craft Beer" param="craftbeer" value="true" currentValue={params.craftbeer} />
-          <FilterButton label="Cider" param="cider" value="true" currentValue={params.cider} />
-          <FilterButton label="Alcohol-Free" param="alcoholfree" value="true" currentValue={params.alcoholfree} />
+          <FilterTooltip>
+            <>
+              <span className="text-sm text-stout-400">Filter:</span>
+              <FilterButton label="Open Now" param="open" value="true" currentValue={params.open} />
+              <FilterButton label="Late Bar" param="latebar" value="true" currentValue={params.latebar} />
+              <FilterButton label="Food" param="food" value="true" currentValue={params.food} />
+              <FilterButton label="Live Music" param="music" value="true" currentValue={params.music} />
+              <FilterButton label="Trad Music" param="trad" value="true" currentValue={params.trad} />
+              <FilterButton label="Sports" param="sports" value="true" currentValue={params.sports} />
+              <FilterButton label="Outdoor" param="outdoor" value="true" currentValue={params.outdoor} />
+              <FilterButton label="Dog Friendly" param="dogfriendly" value="true" currentValue={params.dogfriendly} />
+              <FilterButton label="Snug" param="snug" value="true" currentValue={params.snug} />
+              <FilterButton label="Craft Beer" param="craftbeer" value="true" currentValue={params.craftbeer} />
+              <FilterButton label="Cider" param="cider" value="true" currentValue={params.cider} />
+              <FilterButton label="Alcohol-Free" param="alcoholfree" value="true" currentValue={params.alcoholfree} />
+            </>
+          </FilterTooltip>
         </div>
       </div>
 

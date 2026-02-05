@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import SearchBar from './SearchBar';
+import NotificationBell from './NotificationBell';
+import { NearMeTooltip } from './OnboardingTooltip';
 import type { User } from '@supabase/supabase-js';
 
 export default function Navbar() {
@@ -158,19 +160,32 @@ export default function Navbar() {
 
               {/* Desktop navigation */}
               <div className="hidden lg:ml-8 lg:flex lg:space-x-1">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      pathname === link.href
-                        ? 'text-stout-900 bg-cream-200'
-                        : 'text-stout-700 hover:text-stout-900 hover:bg-cream-200'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {navLinks.map((link) => {
+                  const linkElement = (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        pathname === link.href
+                          ? 'text-stout-900 bg-cream-200'
+                          : 'text-stout-700 hover:text-stout-900 hover:bg-cream-200'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+
+                  // Wrap "Near Me" link with tooltip
+                  if (link.href === '/nearby') {
+                    return (
+                      <NearMeTooltip key={link.href}>
+                        {linkElement}
+                      </NearMeTooltip>
+                    );
+                  }
+
+                  return linkElement;
+                })}
               </div>
             </div>
 
@@ -180,6 +195,9 @@ export default function Navbar() {
               <div className="w-48 lg:w-64">
                 <SearchBar />
               </div>
+
+              {/* Notification Bell - only show when logged in */}
+              {user && <NotificationBell />}
 
               {authLoading ? (
                 <div className="w-20 h-8 bg-cream-200 rounded animate-pulse"></div>
@@ -198,6 +216,12 @@ export default function Navbar() {
                     className="text-stout-700 hover:text-stout-900 px-3 py-2 text-sm font-medium"
                   >
                     Profile
+                  </Link>
+                  <Link
+                    href="/stats"
+                    className="text-stout-700 hover:text-stout-900 px-3 py-2 text-sm font-medium"
+                  >
+                    Your Stats
                   </Link>
                   <button
                     onClick={handleSignOut}
@@ -257,20 +281,33 @@ export default function Navbar() {
               <SearchBar />
             </div>
             <div className="px-2 pb-3 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    pathname === link.href
-                      ? 'text-stout-900 bg-cream-200'
-                      : 'text-stout-700 hover:text-stout-900 hover:bg-cream-200'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const linkElement = (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      pathname === link.href
+                        ? 'text-stout-900 bg-cream-200'
+                        : 'text-stout-700 hover:text-stout-900 hover:bg-cream-200'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+
+                // Wrap "Near Me" link with tooltip
+                if (link.href === '/nearby') {
+                  return (
+                    <NearMeTooltip key={link.href}>
+                      {linkElement}
+                    </NearMeTooltip>
+                  );
+                }
+
+                return linkElement;
+              })}
               <hr className="border-cream-300 my-2" />
               {authLoading ? (
                 <div className="px-3 py-2">
@@ -293,6 +330,13 @@ export default function Navbar() {
                     className="block px-3 py-2 rounded-md text-base font-medium text-stout-700 hover:text-stout-900 hover:bg-cream-200"
                   >
                     Profile
+                  </Link>
+                  <Link
+                    href="/stats"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-stout-700 hover:text-stout-900 hover:bg-cream-200"
+                  >
+                    Your Stats
                   </Link>
                   <button
                     onClick={() => {

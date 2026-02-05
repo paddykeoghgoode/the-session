@@ -23,6 +23,7 @@ import PriceHistoryGraph from '@/components/PriceHistoryGraph';
 import ReportButton from '@/components/ReportButton';
 import AdminDealManager from '@/components/AdminDealManager';
 import StructuredData from '@/components/StructuredData';
+import { SubmitPriceTooltip, VerifyTooltip } from '@/components/OnboardingTooltip';
 import { formatDate, getMapUrl, getDirectionsUrl, calculateAverageRating, formatEircode, getEircodeMapUrl, formatDayHours, hasOpeningHours, formatPrice, type DayOfWeek } from '@/lib/utils';
 import type { Pub, Price, Review, PubPhoto, Drink, Profile } from '@/types';
 
@@ -705,7 +706,9 @@ export default async function PubPage({ params }: { params: Promise<{ id: string
       </div>
 
       {/* Quick Add Price Button */}
-        <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
+        <SubmitPriceTooltip>
+          <QuickAddPrice pubId={pub.id} pubName={pub.name} userId={user?.id} />
+        </SubmitPriceTooltip>
       </div>
     </>
   );

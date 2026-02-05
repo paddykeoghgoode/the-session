@@ -2,12 +2,15 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import type { Pub } from '@/types';
 import { formatPrice, getDistanceKm } from '@/lib/utils';
 
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 // Fix for default marker icons in Leaflet with webpack
 const createCustomIcon = (color: string = '#169b62') => {
@@ -173,42 +176,59 @@ export default function MapContent({
           </>
         )}
 
-        {/* Pub markers */}
-        {filteredPubs
-          .filter(pub => pub.latitude && pub.longitude)
-          .map(pub => (
-            <Marker
-              key={pub.id}
-              position={[pub.latitude!, pub.longitude!]}
-              icon={getIconForPub(pub)}
-              eventHandlers={{
-                click: () => handlePubClick(pub),
-              }}
-            >
-              <Popup>
-                <div className="min-w-[200px]">
-                  <h3 className="font-semibold text-sm mb-1">{pub.name}</h3>
-                  <p className="text-xs text-gray-600 mb-2">{pub.address}</p>
-                  {pub.cheapest_guinness && (
-                    <p className="text-xs text-green-600 font-medium mb-2">
-                      Guinness: {formatPrice(pub.cheapest_guinness)}
-                    </p>
-                  )}
-                  {userLocation && pub.latitude && pub.longitude && (
-                    <p className="text-xs text-gray-500 mb-2">
-                      {getDistanceKm(userLocation.lat, userLocation.lng, pub.latitude, pub.longitude).toFixed(1)} km away
-                    </p>
-                  )}
-                  <a
-                    href={`/pubs/${pub.slug || pub.id}`}
-                    className="inline-block text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors"
-                  >
-                    View Details
-                  </a>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+        {/* Pub markers with clustering */}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={60}
+          spiderfyOnMaxZoom={true}
+          showCoverageOnHover={false}
+          zoomToBoundsOnClick={true}
+          iconCreateFunction={(cluster: any) => {
+            const count = cluster.getChildCount();
+            const size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
+            return L.divIcon({
+              html: `<div class="cluster-marker cluster-${size}">${count}</div>`,
+              className: 'custom-cluster-icon',
+              iconSize: L.point(40, 40, true),
+            });
+          }}
+        >
+          {filteredPubs
+            .filter(pub => pub.latitude && pub.longitude)
+            .map(pub => (
+              <Marker
+                key={pub.id}
+                position={[pub.latitude!, pub.longitude!]}
+                icon={getIconForPub(pub)}
+                eventHandlers={{
+                  click: () => handlePubClick(pub),
+                }}
+              >
+                <Popup>
+                  <div className="min-w-[200px]">
+                    <h3 className="font-semibold text-sm mb-1">{pub.name}</h3>
+                    <p className="text-xs text-gray-600 mb-2">{pub.address}</p>
+                    {pub.cheapest_guinness && (
+                      <p className="text-xs text-green-600 font-medium mb-2">
+                        Guinness: {formatPrice(pub.cheapest_guinness)}
+                      </p>
+                    )}
+                    {userLocation && pub.latitude && pub.longitude && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        {getDistanceKm(userLocation.lat, userLocation.lng, pub.latitude, pub.longitude).toFixed(1)} km away
+                      </p>
+                    )}
+                    <a
+                      href={`/pubs/${pub.slug || pub.id}`}
+                      className="inline-block text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors"
+                    >
+                      View Details
+                    </a>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+        </MarkerClusterGroup>
 
         {/* Fit bounds to all pubs */}
         {filteredPubs.length > 1 && <FitBounds pubs={filteredPubs} />}

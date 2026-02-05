@@ -1,9 +1,17 @@
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { formatPrice, formatRelativeTime } from '@/lib/utils';
+import { generateMetadata as createMetadata } from '@/lib/metadata';
 import AdvertisingBanner from '@/components/AdvertisingBanner';
 
 export const revalidate = 60;
+
+export const metadata = createMetadata({
+  title: 'Best Pub Deals & Happy Hours in Dublin',
+  description: 'Find the best pub deals, happy hours, and special offers in Dublin. Save money on pints, food, and more with our community-verified deals.',
+  path: '/deals',
+  keywords: ['Dublin pub deals', 'happy hour Dublin', 'cheap pints', 'pub specials', 'drink deals Dublin'],
+});
 
 async function getDeals() {
   const supabase = await createServerSupabaseClient();
