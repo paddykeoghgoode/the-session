@@ -47,7 +47,7 @@ export default function MobileBottomNav() {
     {
       href: '/prices/add',
       label: 'Add',
-      icon: () => (
+      icon: (active: boolean) => (
         <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
