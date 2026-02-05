@@ -41,7 +41,7 @@ export default function NotificationBell() {
       {/* Bell button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-cream-100 hover:text-white transition-colors"
+        className="relative p-2 text-stout-700 hover:text-stout-900 transition-colors"
         aria-label="Notifications"
         aria-expanded={isOpen}
       >

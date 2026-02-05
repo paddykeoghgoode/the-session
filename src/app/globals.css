@@ -232,3 +232,45 @@ input[type="number"] {
 .animate-scale-in {
   animation: scale-in 0.3s ease-out;
 }
+
+/* Map cluster markers */
+.custom-cluster-icon {
+  background: transparent;
+}
+
+.cluster-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 14px;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.cluster-marker:hover {
+  transform: scale(1.1);
+}
+
+.cluster-small {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #169b62, #0f7347);
+  border: 3px solid #0a4d2e;
+}
+
+.cluster-medium {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 3px solid #92400e;
+}
+
+.cluster-large {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: 3px solid #991b1b;
+}
