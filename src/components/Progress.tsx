@@ -11,7 +11,7 @@ interface ProgressBarProps {
   className?: string;
 }
 
-export default function ProgressBar({
+export function ProgressBar({
   value,
   max = 100,
   size = 'md',

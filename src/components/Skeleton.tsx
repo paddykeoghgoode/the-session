@@ -172,3 +172,30 @@ export function PubDetailSkeleton() {
     </div>
   );
 }
+
+export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-full">
+        {/* Table header */}
+        <div className="border-b border-stout-700 pb-3 mb-3">
+          <div className="flex gap-4">
+            {Array.from({ length: cols }).map((_, i) => (
+              <Skeleton key={i} className="h-4 flex-1" />
+            ))}
+          </div>
+        </div>
+        {/* Table rows */}
+        <div className="space-y-3">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div key={i} className="flex gap-4">
+              {Array.from({ length: cols }).map((_, j) => (
+                <Skeleton key={j} className="h-8 flex-1" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
