@@ -11,7 +11,7 @@ interface QuickAction {
 
 const actions: QuickAction[] = [
   {
-    href: '/pubs?intent=watch-sports',
+    href: '/pubs?sports=true',
     icon: '\u26BD',
     label: 'Watch Sports',
     sublabel: 'Best screens',
@@ -19,7 +19,7 @@ const actions: QuickAction[] = [
     borderColor: 'border-blue-700/40',
   },
   {
-    href: '/pubs?intent=cheap-pints',
+    href: '/pubs?sort=price',
     icon: '\uD83D\uDCB0',
     label: 'Cheap Pints',
     sublabel: 'Best value',
@@ -35,7 +35,7 @@ const actions: QuickAction[] = [
     borderColor: 'border-amber-700/40',
   },
   {
-    href: '/pubs?intent=live-trad-music',
+    href: '/pubs?music=true',
     icon: '\uD83C\uDFB5',
     label: 'Live Music',
     sublabel: 'Trad & gigs',
@@ -43,7 +43,7 @@ const actions: QuickAction[] = [
     borderColor: 'border-purple-700/40',
   },
   {
-    href: '/pubs?intent=late-night',
+    href: '/pubs?latebar=true',
     icon: '\uD83C\uDF19',
     label: 'Late Night',
     sublabel: 'Open late',

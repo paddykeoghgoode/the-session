@@ -25,16 +25,16 @@ export interface DublinEvent {
 }
 
 // League IDs from TheSportsDB
+// Focused on what Irish pub-goers actually watch
 const LEAGUES = {
-  PREMIER_LEAGUE: 4328,
-  CHAMPIONS_LEAGUE: 4480,
-  SIX_NATIONS: 4724,
-  LEAGUE_OF_IRELAND: 4406,
-  LA_LIGA: 4335,
-  SERIE_A: 4332,
-  BUNDESLIGA: 4331,
-  LIGUE_1: 4334,
-  URC: 5765, // United Rugby Championship
+  PREMIER_LEAGUE: 4328,     // English Premier League
+  FA_CUP: 4482,             // FA Cup
+  LEAGUE_CUP: 4570,         // EFL Cup / Carabao Cup
+  CHAMPIONS_LEAGUE: 4480,   // UEFA Champions League
+  EUROPA_LEAGUE: 4481,      // UEFA Europa League
+  SIX_NATIONS: 4724,        // Six Nations Rugby
+  LEAGUE_OF_IRELAND: 4406,  // League of Ireland
+  URC: 5765,                // United Rugby Championship (Leinster, Munster, etc.)
 };
 
 // Teams Irish people care about
@@ -150,15 +150,14 @@ export function getSportIcon(sport: string): string {
 
 export function getLeagueShortName(league: string): string {
   const map: Record<string, string> = {
-    'English Premier League': 'Premier League',
-    'UEFA Champions League': 'Champions League',
+    'English Premier League': 'PL',
+    'UEFA Champions League': 'UCL',
+    'UEFA Europa League': 'UEL',
+    'English League Cup': 'League Cup',
+    'English FA Cup': 'FA Cup',
     'Six Nations': '6 Nations',
     'League of Ireland Premier Division': 'LOI',
     'United Rugby Championship': 'URC',
-    'La Liga': 'La Liga',
-    'Italian Serie A': 'Serie A',
-    'German Bundesliga': 'Bundesliga',
-    'French Ligue 1': 'Ligue 1',
   };
   return map[league] || league;
 }

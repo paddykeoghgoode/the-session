@@ -118,54 +118,52 @@ export default function WhatsOnTonight({ pubEvents = [] }: WhatsOnTonightProps) 
                 {displayEvents.map(event => (
                   <Link
                     key={event.id}
-                    href={`/pubs?intent=watch-sports`}
-                    className="flex-shrink-0 w-[280px] sm:w-[320px] snap-start"
+                    href="/pubs?sports=true"
+                    className="flex-shrink-0 w-[300px] sm:w-[340px] snap-start"
                   >
-                    <div className={`relative rounded-xl p-4 border transition-all active:scale-[0.98] ${
+                    <div className={`relative rounded-xl p-4 border transition-all active:scale-[0.98] h-full ${
                       event.isIrelandGame
                         ? 'bg-gradient-to-br from-irish-green-700/30 to-stout-800 border-irish-green-600/50'
                         : event.isBigMatch
                           ? 'bg-gradient-to-br from-amber-900/30 to-stout-800 border-amber-700/50'
                           : 'bg-stout-800 border-stout-700'
                     }`}>
-                      {/* League & Sport Badge */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-stout-700 text-stout-300">
+                      {/* League badge + match tag */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-stout-700 text-stout-300 whitespace-nowrap">
                           {getSportIcon(event.sport)} {getLeagueShortName(event.league)}
                         </span>
                         {event.isIrelandGame && (
-                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-irish-green-600 text-white">
+                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-irish-green-600 text-white whitespace-nowrap">
                             IRELAND
                           </span>
                         )}
                         {!event.isIrelandGame && event.isBigMatch && (
-                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-600 text-white">
+                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-600 text-white whitespace-nowrap">
                             BIG MATCH
                           </span>
                         )}
                       </div>
 
-                      {/* Teams */}
-                      <div className="space-y-1 mb-3">
-                        <p className="text-cream-100 font-semibold text-sm leading-tight">
+                      {/* Teams - horizontal layout */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <p className="text-cream-100 font-semibold text-sm truncate flex-1">
                           {event.homeTeam}
                         </p>
-                        <p className="text-stout-400 text-xs">vs</p>
-                        <p className="text-cream-100 font-semibold text-sm leading-tight">
+                        <span className="text-stout-500 text-xs font-medium flex-shrink-0">vs</span>
+                        <p className="text-cream-100 font-semibold text-sm truncate flex-1 text-right">
                           {event.awayTeam}
                         </p>
                       </div>
 
-                      {/* Time & Venue */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-irish-green-500 text-sm font-medium">
+                      {/* Time - prominent, full width */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-stout-700/50">
+                        <svg className="w-4 h-4 text-irish-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-irish-green-500 text-sm font-semibold">
                           {formatMatchTime(event.dateTime)}
                         </span>
-                        {event.venue && (
-                          <span className="text-xs text-stout-400 truncate max-w-[120px]">
-                            {event.venue}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </Link>
