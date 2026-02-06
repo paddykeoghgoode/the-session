@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0d0d0d"/>
+  <circle cx="256" cy="200" r="80" fill="#169b62"/>
+  <rect x="216" y="200" width="80" height="200" rx="40" fill="#169b62"/>
+  <ellipse cx="256" cy="180" rx="60" ry="30" fill="#f9f0e3"/>
+  <text x="256" y="450" text-anchor="middle" font-family="serif" font-size="48" fill="#f9f0e3" font-weight="bold">THE SESSION</text>
+</svg>

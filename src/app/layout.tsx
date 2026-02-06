@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
@@ -8,13 +7,12 @@ import QuickActionsFAB from '@/components/QuickActionsFAB';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://thesession.ie'),
   title: 'The Session - Find the Best Pint Prices in Dublin',
   description: 'Crowdsourced pint prices, pub reviews, and deals across Dublin. Find the cheapest Guinness, Heineken, and ciders near you.',
   keywords: ['Dublin pubs', 'pint prices', 'Guinness', 'pub reviews', 'Dublin nightlife', 'cheap pints'],
+  manifest: '/manifest.json',
   openGraph: {
     title: 'The Session - Find the Best Pint Prices in Dublin',
     description: 'Crowdsourced pint prices, pub reviews, and deals across Dublin.',
@@ -27,6 +25,14 @@ export const metadata: Metadata = {
     title: 'The Session - Find the Best Pint Prices in Dublin',
     description: 'Crowdsourced pint prices, pub reviews, and deals across Dublin.',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'The Session',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export default function RootLayout({
@@ -36,7 +42,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-stout-950 text-cream-100`}>
+      <head>
+        <meta name="theme-color" content="#169b62" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
+      <body className="font-sans bg-stout-950 text-cream-100 overscroll-none">
         <ToastProvider>
           <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''} />
           {/* Skip to main content link for accessibility */}
