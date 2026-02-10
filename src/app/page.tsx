@@ -7,6 +7,7 @@ import StoutIndex from '@/components/StoutIndex';
 import QuickActionGrid from '@/components/QuickActionGrid';
 import WhatsOnTonight from '@/components/WhatsOnTonight';
 import DealsCarousel from '@/components/DealsCarousel';
+import SmartSearch from '@/components/SmartSearch';
 import { formatPrice } from '@/lib/utils';
 
 export const revalidate = 60;
@@ -164,15 +165,10 @@ export default async function HomePage() {
 
           {/* Search Bar - Mobile Prominent */}
           <div className="max-w-xl mx-auto mb-6">
-            <Link
-              href="/pubs"
-              className="flex items-center gap-3 bg-stout-800 border border-stout-600 rounded-xl px-4 py-3.5 hover:border-irish-green-600/50 transition-colors group"
-            >
-              <svg className="w-5 h-5 text-stout-400 group-hover:text-irish-green-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="text-stout-400 text-sm sm:text-base">Search pubs, areas, or drinks...</span>
-            </Link>
+            <SmartSearch
+              placeholder="Search pubs, areas, or drinks..."
+              className="w-full"
+            />
           </div>
 
           {/* Stout Index - Compact */}

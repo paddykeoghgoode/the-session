@@ -2,106 +2,17 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import SearchBar from './SearchBar';
 import NotificationBell from './NotificationBell';
 import { NearMeTooltip } from './OnboardingTooltip';
-import type { User } from '@supabase/supabase-js';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Get singleton supabase client
-  const supabase = createClient();
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchAdminStatus = async (userId: string) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', userId)
-          .single();
-
-        if (error) {
-          console.error('[Navbar] Profile fetch error:', error.message);
-          return false;
-        }
-        return profile?.is_admin === true;
-      } catch (err) {
-        console.error('[Navbar] Profile fetch exception:', err);
-        return false;
-      }
-    };
-
-    const initializeAuth = async () => {
-      try {
-        // Get current session from localStorage
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        console.log('[Navbar] Initial session check:', {
-          hasSession: !!session,
-          userId: session?.user?.id,
-          error: error?.message
-        });
-
-        if (!isMounted) return;
-
-        if (session?.user) {
-          setUser(session.user);
-          const adminStatus = await fetchAdminStatus(session.user.id);
-          if (isMounted) {
-            setIsAdmin(adminStatus);
-            console.log('[Navbar] Auth initialized, isAdmin:', adminStatus);
-          }
-        }
-      } catch (err) {
-        console.error('[Navbar] Auth init error:', err);
-      } finally {
-        if (isMounted) {
-          setAuthLoading(false);
-        }
-      }
-    };
-
-    // Initialize auth state
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[Navbar] Auth state change:', event);
-
-        if (!isMounted) return;
-
-        if (session?.user) {
-          setUser(session.user);
-          const adminStatus = await fetchAdminStatus(session.user.id);
-          if (isMounted) {
-            setIsAdmin(adminStatus);
-          }
-        } else {
-          setUser(null);
-          setIsAdmin(false);
-        }
-        setAuthLoading(false);
-      }
-    );
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const { user, isAdmin, authLoading, supabase, setUser, setIsAdmin } = useAuth();
 
   const handleSignOut = async () => {
     // Clear client state immediately for responsive UI
@@ -119,7 +30,9 @@ export default function Navbar() {
 
     try {
       // Sign out on client - this clears tokens
-      await supabase.auth.signOut({ scope: 'local' });
+      if (supabase) {
+        await supabase.auth.signOut({ scope: 'local' });
+      }
     } catch (e) {
       // Continue even if client signout fails
       console.error('Client signout error:', e);
