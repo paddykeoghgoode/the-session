@@ -5,9 +5,10 @@ import type { Pub } from '@/types';
 
 interface PubCardProps {
   pub: Pub;
+  rankingReasons?: string[];
 }
 
-export default function PubCard({ pub }: PubCardProps) {
+export default function PubCard({ pub, rankingReasons = [] }: PubCardProps) {
   const isClosed = pub.is_permanently_closed;
 
   return (
@@ -34,6 +35,20 @@ export default function PubCard({ pub }: PubCardProps) {
         </div>
 
         <p className="text-sm text-stout-400 mb-3">{pub.address}</p>
+
+        {/* Ranking explanation badges */}
+        {rankingReasons.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {rankingReasons.slice(0, 2).map((reason) => (
+              <span
+                key={reason}
+                className="text-xs bg-irish-green-700/30 border border-irish-green-600/40 text-irish-green-200 px-2 py-1 rounded-full"
+              >
+                {reason}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Rating */}
         {pub.avg_rating && pub.avg_rating > 0 ? (

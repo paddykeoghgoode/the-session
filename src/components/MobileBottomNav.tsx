@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 interface NavItem {
   href: string;
@@ -14,23 +13,7 @@ interface NavItem {
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+  const { isAuthenticated } = useAuth();
 
   const navItems: NavItem[] = [
     {
