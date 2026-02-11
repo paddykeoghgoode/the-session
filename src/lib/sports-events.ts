@@ -6,11 +6,15 @@ export interface SportEvent {
   name: string;
   homeTeam: string;
   awayTeam: string;
+  leagueId: string;
   league: string;
   sport: string;
   dateTime: string;
   venue: string | null;
   thumbnail: string | null;
+  status: string | null;
+  progress: string | null;
+  isLive: boolean;
   isIrelandGame: boolean;
   isBigMatch: boolean;
 }
@@ -37,6 +41,37 @@ const LEAGUES = {
   URC: 5765, // United Rugby Championship
 };
 
+const TOP_TIER_LEAGUE_IDS = new Set(Object.values(LEAGUES).map(String));
+
+// Explicitly hide lower-division competitions in homepage cards
+const EXCLUDED_LEAGUE_KEYWORDS = [
+  'league one',
+  'league 1',
+  'league two',
+  'league 2',
+];
+
+const EXCLUDED_STATUSES = new Set([
+  'FT',
+  'AET',
+  'AOT',
+  'PEN',
+  'CANC',
+  'PST',
+  'POST',
+  'ABD',
+  'AWD',
+  'WO',
+]);
+
+const LIVE_STATUSES = new Set([
+  '1H', '2H', 'HT', 'ET', 'P', 'BT',
+  'Q1', 'Q2', 'Q3', 'Q4', 'OT',
+  'IN1', 'IN2', 'IN3', 'IN4', 'IN5', 'IN6', 'IN7', 'IN8', 'IN9',
+  'P1', 'P2', 'P3',
+  'S1', 'S2', 'S3', 'S4', 'S5',
+]);
+
 // Teams Irish people care about
 const IRELAND_TEAMS = [
   'republic of ireland', 'ireland', 'shamrock rovers', 'bohemians',
@@ -61,17 +96,30 @@ function isBigMatch(eventName: string, homeTeam: string, awayTeam: string): bool
   return BIG_MATCH_KEYWORDS.some(keyword => lower.includes(keyword));
 }
 
+function isTopTierLeague(leagueId: string, leagueName: string): boolean {
+  const lowerLeague = leagueName.toLowerCase();
+
+  if (EXCLUDED_LEAGUE_KEYWORDS.some(keyword => lowerLeague.includes(keyword))) {
+    return false;
+  }
+
+  return TOP_TIER_LEAGUE_IDS.has(leagueId);
+}
+
 interface TheSportsDBEvent {
   idEvent: string;
   strEvent: string;
   strHomeTeam: string;
   strAwayTeam: string;
+  idLeague?: string;
   strLeague: string;
   strSport: string;
   dateEvent: string;
   strTime: string;
   strVenue: string | null;
   strThumb: string | null;
+  strStatus?: string | null;
+  strProgress?: string | null;
 }
 
 async function fetchLeagueEvents(leagueId: number): Promise<SportEvent[]> {
@@ -86,19 +134,27 @@ async function fetchLeagueEvents(leagueId: number): Promise<SportEvent[]> {
     const data = await res.json();
     if (!data.events) return [];
 
-    return data.events.map((event: TheSportsDBEvent) => ({
-      id: event.idEvent,
-      name: event.strEvent,
-      homeTeam: event.strHomeTeam,
-      awayTeam: event.strAwayTeam,
-      league: event.strLeague,
-      sport: event.strSport,
-      dateTime: `${event.dateEvent}T${event.strTime || '15:00:00'}`,
-      venue: event.strVenue,
-      thumbnail: event.strThumb,
-      isIrelandGame: isIrelandRelated(event.strHomeTeam, event.strAwayTeam),
-      isBigMatch: isBigMatch(event.strEvent, event.strHomeTeam, event.strAwayTeam),
-    }));
+    return data.events.map((event: TheSportsDBEvent) => {
+      const status = event.strStatus?.trim() || null;
+
+      return {
+        id: event.idEvent,
+        name: event.strEvent,
+        homeTeam: event.strHomeTeam,
+        awayTeam: event.strAwayTeam,
+        leagueId: event.idLeague || String(leagueId),
+        league: event.strLeague,
+        sport: event.strSport,
+        dateTime: `${event.dateEvent}T${event.strTime || '15:00:00'}`,
+        venue: event.strVenue,
+        thumbnail: event.strThumb,
+        status,
+        progress: event.strProgress?.trim() || null,
+        isLive: status ? LIVE_STATUSES.has(status) : false,
+        isIrelandGame: isIrelandRelated(event.strHomeTeam, event.strAwayTeam),
+        isBigMatch: isBigMatch(event.strEvent, event.strHomeTeam, event.strAwayTeam),
+      };
+    });
   } catch {
     return [];
   }
@@ -118,8 +174,10 @@ export async function getUpcomingSportsEvents(): Promise<SportEvent[]> {
     }
   }
 
-  // Sort: Ireland games first, then big matches, then by date
+  // Sort: live first, then Ireland games, then big matches, then by date
   allEvents.sort((a, b) => {
+    if (a.isLive && !b.isLive) return -1;
+    if (!a.isLive && b.isLive) return 1;
     if (a.isIrelandGame && !b.isIrelandGame) return -1;
     if (!a.isIrelandGame && b.isIrelandGame) return 1;
     if (a.isBigMatch && !b.isBigMatch) return -1;
@@ -127,13 +185,22 @@ export async function getUpcomingSportsEvents(): Promise<SportEvent[]> {
     return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
   });
 
-  // Filter to next 7 days
+  // Filter to next 7 days and top-tier competitions only
   const now = new Date();
   const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   return allEvents.filter(event => {
     const eventDate = new Date(event.dateTime);
-    return eventDate >= now && eventDate <= weekFromNow;
+    if (eventDate < now || eventDate > weekFromNow) {
+      return false;
+    }
+
+    if (event.status && EXCLUDED_STATUSES.has(event.status)) {
+      return false;
+    }
+
+    // Only show major competitions in this carousel.
+    return isTopTierLeague(event.leagueId, event.league);
   });
 }
 

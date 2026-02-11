@@ -143,6 +143,11 @@ export default function WhatsOnTonight({ pubEvents = [] }: WhatsOnTonightProps) 
                             BIG MATCH
                           </span>
                         )}
+                        {event.isLive && (
+                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-red-600 text-white">
+                            LIVE {event.progress ? `• ${event.progress}` : ''}
+                          </span>
+                        )}
                       </div>
 
                       {/* Teams */}
@@ -159,7 +164,7 @@ export default function WhatsOnTonight({ pubEvents = [] }: WhatsOnTonightProps) 
                       {/* Time & Venue */}
                       <div className="flex items-center justify-between">
                         <span className="text-irish-green-500 text-sm font-medium">
-                          {formatMatchTime(event.dateTime)}
+                          {event.isLive ? (event.status || 'LIVE') : formatMatchTime(event.dateTime)}
                         </span>
                         {event.venue && (
                           <span className="text-xs text-stout-400 truncate max-w-[120px]">
